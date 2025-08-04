@@ -1,0 +1,17 @@
+       .gradient-background {
+    background: linear-gradient(to bottom, #212529, #343a40);
+    }
+       .gradient-background2 {
+    background: linear-gradient(to bottom, #EFEB26, #44F2C9);
+    }
+    .feature-icon {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 0.75rem;
+    }
+    .carousel-item {
+  width: 100%;
+  height: 100vh; /* Adjust this value to control the height */
+  background-size: cover;
+  background-position: center;
+  }

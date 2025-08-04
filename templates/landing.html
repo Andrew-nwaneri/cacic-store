@@ -1,0 +1,12 @@
+{% extends 'header.html' %}
+{% from 'bootstrap5/form.html' import render_form %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div style="padding-top: 5rem" class="container w-25">
+    <div  style="padding: 20px" class="form-control d-grid">
+<a style="padding: 10px" class="btn btn-info" href="{{ url_for('register') }}"><span>Register</span></a>
+<a style="padding: 10px" href="{{ url_for('login') }}" class="btn btn-secondary" ><span>Log In</span></a>
+    </div></div>
+{% include "footer.html" %} {% endblock %}
