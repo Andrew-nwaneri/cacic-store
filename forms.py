@@ -8,14 +8,14 @@ class RegisterForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     confirm = PasswordField("Confirm password", validators=[DataRequired()])
-    submit = SubmitField("Sign Me Up!", render_kw={"class": "btn btn-success"})
+    submit = SubmitField("Register", render_kw={"class": "btn btn-secondary"})
 
 
 # Create a form to login existing users
 class LoginForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
-    submit = SubmitField("Let Me In!", render_kw={"class": "btn btn-success"})
+    submit = SubmitField("Login", render_kw={"class": "btn btn-secondary"})
 
 
 # Create a form to add comments

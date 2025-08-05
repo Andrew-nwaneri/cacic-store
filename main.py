@@ -265,7 +265,9 @@ def delete_cart(post_id):
 
 @app.route("/edit/<int:item_id>", methods=["GET", "POST"])
 @admin_only
-def edit_transaction(item_id):
+def edit_item(item_id):
+    cart_count = len(current_user.cart) if current_user.is_authenticated else 0
+    print(cart_count)
     form = db.get_or_404(Items, item_id)
     edit_form = EditItem(
         name=form.name,
@@ -282,7 +284,7 @@ def edit_transaction(item_id):
         form.unit = edit_form.unit.data
         db.session.commit()
         return redirect(url_for("home"))
-    return render_template("add.html", form=edit_form, is_edit=True, current_user=current_user)
+    return render_template("add.html", form=edit_form, is_edit=True, current_user=current_user, cart_count=cart_count)
 
 
 if __name__ == "__main__":

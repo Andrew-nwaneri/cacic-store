@@ -8,7 +8,7 @@
   style="background-image: url('../static/assets/img/edit-bg.jpg')"
 >
   <div class="container position-relative px-4 px-lg-5">
-    <div class="row gx-4 gx-lg-5 justify-content-center">
+    <div class="row gx-4 gx-lg-5 justify-content-center m-3 py-3">
       <div class="col-md-10 col-lg-8 col-xl-7">
         <div class="page-heading">
           {% if is_edit: %}
@@ -29,7 +29,7 @@
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-lg-8 col-md-10 mx-auto">
-        {{ render_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+        {{ render_form(form, novalidate=True, button_map={"submit": "secondary"}) }}
       </div>
     </div>
   </div>
