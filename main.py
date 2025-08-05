@@ -1,6 +1,3 @@
-from datetime import date
-
-import requests
 from flask import Flask, abort, render_template, redirect, url_for, flash, request, jsonify
 from flask_bootstrap import Bootstrap5
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
