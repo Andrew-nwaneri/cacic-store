@@ -1,4 +1,6 @@
 from datetime import date
+
+import requests
 from flask import Flask, abort, render_template, redirect, url_for, flash, request, jsonify
 from flask_bootstrap import Bootstrap5
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
@@ -286,6 +288,27 @@ def edit_item(item_id):
         return redirect(url_for("home"))
     return render_template("add.html", form=edit_form, is_edit=True, current_user=current_user, cart_count=cart_count)
 
+@app.route("/search", methods=["GET", "POST"])
+def search():
+    cart_count = len(current_user.cart) if current_user.is_authenticated else 0
+    searched = request.args.get('search').title()
+    stock = db.session.execute(db.select(Items)).scalars().all()
+    names = [item.name for item in stock]
+    stocks = []
+    for name in names:
+        if searched in name:
+            stocked = db.session.execute(db.select(Items).where(Items.name == name)).scalar()
+            stocks.append(stocked)
+    return render_template("search.html", user=current_user, stocks=stocks, cart_count=cart_count)
+
+
+
+@app.route("/inventory", methods=["GET", "POST"])
+def inventory():
+    stocks = db.session.execute(db.select(Items)).scalars().all()
+    cart_count = len(current_user.cart) if current_user.is_authenticated else 0
+    print(cart_count)
+    return render_template("inventory.html", user=current_user, stocks=stocks, cart_count=cart_count)
 
 if __name__ == "__main__":
     app.run(debug=True)
