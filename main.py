@@ -298,6 +298,11 @@ def search():
             stocks.append(stocked)
     return render_template("search.html", user=current_user, stocks=stocks, cart_count=cart_count)
 
+@app.route("/view/<int:item_id>")
+def view(item_id):
+    cart_count = len(current_user.cart) if current_user.is_authenticated else 0
+    item = db.get_or_404(Items, item_id)
+    return render_template("view.html", user=current_user, item=item, cart_count=cart_count)
 
 
 @app.route("/inventory", methods=["GET", "POST"])
