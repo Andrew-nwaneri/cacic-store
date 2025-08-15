@@ -19,6 +19,14 @@ application = app
 def load_user(user_id):
     return db.get_or_404(User, user_id)
 
+#!/bin/sh
+url="https://api.paystack.co/transaction/initialize"
+authorization="Authorization: Bearer YOUR_SECRET_KEY"
+content_type="Content-Type: application/json"
+data='{"email": "customer@email.com", "amount": "20000"}'
+
+# curl "$url" -H "$authorization" -H "$content_type" -d "$data" -X POST
+
 
 # For adding profile images to the comment section
 # gravatar = Gravatar(app,
@@ -31,7 +39,6 @@ def load_user(user_id):
 #                     base_url=None)
 
 
-# CREATE DATABASE
 class Base(DeclarativeBase):
     pass
 
@@ -79,7 +86,54 @@ class Cart(db.Model):
     product = relationship("Items", back_populates="cart")
     user = relationship("User", back_populates="cart")
 
-
+inventory_dict = [{
+        "description": "Made through controlled heating, blending, filtration and extraction. With no added colouring or preservatives it is a natural sugar that has the added benefit of being less processed than white sugar.",
+        "id": 1,
+        "img_url": "https://skinnyms.com/wp-content/uploads/2021/03/Homemade-Date-Syrup-1-Yum-500x500.jpg",
+        "name": "Date Syrup",
+        "price": 15000.0,
+        "unit": "Litre"
+    },
+    {
+        "description": "Made through controlled heating, blending, filtration and extraction. With no added colouring or preservatives it's a natural sugar that has the added benefit of being less processed than white sugar.",
+        "id": 2,
+        "img_url": "https://m.media-amazon.com/images/I/713rSxKKaPL.jpg",
+        "name": "Date Syrup ",
+        "price": 7000.0,
+        "unit": "50CL"
+    },
+    {
+        "description": "Vacum dried fresh catfish, selectively sorted and dried under the perfect temperature, humidty and atmosphere to ensure the nutritional and hygenic qualities were maintained.",
+        "id": 3,
+        "img_url": "https://sc04.alicdn.com/kf/A83b0a6b2eb864b9d9fe9023c946cc3b8T.jpg",
+        "name": "Cat Fish",
+        "price": 5000.0,
+        "unit": "KG"
+    },
+    {
+        "description": "Get value and quality with our 50 kg bag of rice. Ideal for bulk buying, this premium rice is perfect for everyday meals, catering, or large family.",
+        "id": 4,
+        "img_url": "https://mall.thecbncoop.com/assets/images/products/1634569714Mama-choice---50-420x458.jpg",
+        "name": "Bag of Rice",
+        "price": 80500.0,
+        "unit": "50KG"
+    },
+    {
+        "description": "Vegetable oil locally produced in Nigeria, well filtered, available in 25L kegs, hygienically packaged, and has a tamper-evident seal",
+        "id": 5,
+        "img_url": "https://deeski.com/image/cache/catalog/Foods/Kings%20devon%20veg%20oil%2025ltrs-500x500.jpg",
+        "name": "Groundnut Oil",
+        "price": 90500.0,
+        "unit": "25Litre"
+    },
+    {
+        "description": "Palm oil locally produced in Nigeria, well filtered, available in 25L kegs, hygienically packaged, and has a tamper-evident seal",
+        "id": 6,
+        "img_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6YNYp1jJXMOynawoAtkgEpaqOgtf9NOfcRQ&s",
+        "name": "Palm Oil",
+        "price": 68500.0,
+        "unit": "25Litre"
+    }]
 
 @app.route("/add-to-cart/<int:item_id>", methods=["POST"])
 def add_to_cart(item_id):
@@ -115,19 +169,6 @@ def add_to_cart(item_id):
         }), 500
 
 
-# class Cart(db.Model):
-#     __tablename__ = "cart"
-#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-#     user_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("users.id"))
-#     item_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("stock.id"))
-#     amount: Mapped[int] = mapped_column(Integer, default=1)
-#     item: Mapped[str] = mapped_column(String(250), nullable=False)
-#     price: Mapped[float] = mapped_column(Float, nullable=False)
-#     img_url: Mapped[str] = mapped_column(String(1250), nullable=True)
-#     product = relationship("Items", back_populates="user")
-#     user = relationship("User", back_populates="cart")
-
-
 with app.app_context():
     db.create_all()
 
@@ -146,9 +187,13 @@ def admin_only(f):
 @app.route("/", methods=["GET", "POST"])
 def home():
     stocks = db.session.execute(db.select(Items)).scalars().all()
-    cart_count = len(current_user.cart) if current_user.is_authenticated else 0
-    print(cart_count)
-    return render_template("index.html", user=current_user, stocks=stocks, cart_count=cart_count)
+    if stocks:
+        cart_count = len(current_user.cart) if current_user.is_authenticated else 0
+        return render_template("index.html", user=current_user, stocks=stocks, cart_count=cart_count, page='Products')
+    else:
+        cart_count = len(current_user.cart) if current_user.is_authenticated else 0
+        return render_template("index.html", user=current_user, stocks=inventory_dict, cart_count=cart_count, page='This Is a Demo Product Page - current Inventory Database is empty')
+
 
 @app.route('/register', methods=["GET", "POST"])
 def register():
@@ -186,7 +231,6 @@ def login():
     if form.validate_on_submit():
         password = form.password.data
         result = db.session.execute(db.select(User).where(User.email == form.email.data))
-        # Note, email in db is unique so will only have one result.
         user = result.scalar()
         # Email doesn't exist
         if not user:
@@ -253,7 +297,7 @@ def delete(post_id):
     post_to_delete = db.get_or_404(Items, post_id)
     db.session.delete(post_to_delete)
     db.session.commit()
-    return redirect(url_for('home'))
+    return redirect(url_for('inventory'))
 
 @app.route("/delete-cart/<int:post_id>")
 def delete_cart(post_id):
@@ -282,7 +326,7 @@ def edit_item(item_id):
         form.img_url = edit_form.img_url.data
         form.unit = edit_form.unit.data
         db.session.commit()
-        return redirect(url_for("home"))
+        return redirect(url_for("inventory"))
     return render_template("add.html", form=edit_form, is_edit=True, current_user=current_user, cart_count=cart_count)
 
 @app.route("/search", methods=["GET", "POST"])
