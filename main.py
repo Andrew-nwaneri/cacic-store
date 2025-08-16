@@ -170,7 +170,7 @@ def add_to_cart(item_id):
         }), 401
 
     try:
-        already = db.session.execute(db.select(Cart).where(Cart.item_id == item_id)).scalar()
+        already = db.session.execute(db.select(Cart).where(Cart.item_id == item_id, Cart.user_id == current_user.id)).scalar()
         if already:
            already.amount += 1
            db.session.commit()
@@ -179,7 +179,7 @@ def add_to_cart(item_id):
             new = Cart(product=item_to_add, user_id=current_user.id, item_id=item_id)
             db.session.add(new)
             db.session.commit()
-
+        print(current_user.id)
         cart_count = len(current_user.cart)
         return jsonify({
             'success': True,
@@ -223,6 +223,8 @@ def home():
 
 @app.route('/register', methods=["GET", "POST"])
 def register():
+    cart_count = len(current_user.cart) if current_user.is_authenticated else 0
+
     form = RegisterForm()
     if form.validate_on_submit():
 
@@ -248,11 +250,13 @@ def register():
         # This line will authenticate the user with Flask-Login
         login_user(new_user)
         return redirect(url_for("home"))
-    return render_template("register.html", form=form, current_user=current_user)
+    return render_template("register.html", form=form, current_user=current_user, cart_count=cart_count)
 
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
+    cart_count = len(current_user.cart) if current_user.is_authenticated else 0
+
     form = LoginForm()
     if form.validate_on_submit():
         password = form.password.data
@@ -270,7 +274,7 @@ def login():
             login_user(user)
             return redirect(url_for('home'))
 
-    return render_template("login.html", form=form, current_user=current_user)
+    return render_template("login.html", form=form, current_user=current_user, cart_count=cart_count)
 
 
 @app.route('/logout')
@@ -282,7 +286,7 @@ def logout():
 @admin_only
 def add_new_item():
     cart_count = len(current_user.cart) if current_user.is_authenticated else 0
-    print(cart_count)
+
     form = Add()
     if form.validate_on_submit():
         new_post = Items(
@@ -319,35 +323,112 @@ def cart():
 
 @app.route("/checkout", methods=["GET", "POST"])
 def checkout():
+    cart_count = len(current_user.cart)
     trace_id = str(uuid.uuid4())
     idempotency_key = str(uuid.uuid4())
     access_token = token()
-
     bearer = f'Bearer {access_token}'
-    credential_url = 'https://api.flutterwave.cloud/developersandbox/customers'
-    credential_header = {'Authorization' : bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
-    credential_data = {
-    "address": {
-        "city": "Gotham",
-        "country": "US",
-        "line1": "221B Baker Street",
-        "line2": "b",
-        "postal_code": "94105",
-        "state": "Colorado"
-    },
-    "name": {
-        "first": "King",
-        "middle": "Leo",
-        "last": "James"
-    },
-    "phone": {
-        "country_code": "1",
-        "number": "6313958745"
-    },
-    "email": "james@example.com"}
+    data = {'page': 1, 'size': 10}
+    url = "https://api.flutterwave.cloud/developersandbox/customers"
+    headers = {'Authorization': bearer, "X-Trace-Id": trace_id}
 
-    credential_response = requests.post(url=credential_url, headers=credential_header, json=credential_data)
-    print(credential_response)
+    if request.method == "POST":
+        first_name = request.form.get("firstName")
+        middle_name = request.form.get("middleName")
+        last_name = request.form.get("lastName")
+        phone_number = request.form.get("phone-number")
+        mail = request.form.get("email")
+        address = request.form.get("address")
+        address2 = request.form.get("address2")
+        state = request.form.get("state")
+        post_code = request.form.get("postCode")
+        city = request.form.get("city")
+        country_code = request.form.get("country_code")
+        country = request.form.get("country")
+        required_fields = {
+            "First Name": first_name,
+            "Last Name": last_name,
+            "Phone Number": phone_number,
+            "Email": mail,
+            "Address": address,
+            "State": state,
+            "Postal Code": post_code,
+            "Country": country,
+            "City": city,
+            "Country Code": country_code
+        }
+
+        for field_name, value in required_fields.items():
+            if not value:
+                flash(f"{field_name} is a required field.")
+                return render_template("processing.html", cart_count=cart_count)
+        try:
+            search_url = "https://api.flutterwave.cloud/developersandbox/customers/search"
+            search_data = {'page': 1, 'size': 10, 'email': current_user.email}
+            search_headers = {'Authorization': bearer, "X-Trace-Id": trace_id}
+            search_response = requests.post(search_url, headers=search_headers, json=search_data)
+            if not search_response.json()['data']:
+                credential_header = {'Authorization' : bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
+                credential_data = {
+                "address": {
+                    "city": city,
+                    "country": country,
+                    "line1": address,
+                    "line2": address2,
+                    "postal_code": post_code,
+                    "state": state
+                },
+                "name": {
+                    "first": first_name,
+                    "middle": middle_name,
+                    "last": last_name
+                },
+                "phone": {
+                    "country_code": country_code,
+                    "number": phone_number
+                },
+                "email": mail}
+
+                credential_response = requests.post(url=url, headers=credential_header, json=credential_data)
+                print(credential_response)
+                return redirect(url_for('payment_method'))
+
+            else:
+                print(search_response.json()['data'])
+                return render_template("payment_method.html", cart_count=cart_count)
+
+        except Exception as e:
+            print(e)
+            return jsonify({"STATUS": "Failed"})
+    return render_template("processing.html", cart_count=cart_count)
+
+
+
+    # credential_header = {'Authorization' : bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
+    # credential_data = {
+    # "address": {
+    #     "city": "Gotham",
+    #     "country": "US",
+    #     "line1": "221B Baker Street",
+    #     "line2": "b",
+    #     "postal_code": "94105",
+    #     "state": "Colorado"
+    # },
+    # "name": {
+    #     "first": "King",
+    #     "middle": "Leo",
+    #     "last": "James"
+    # },
+    # "phone": {
+    #     "country_code": "1",
+    #     "number": "6313958745"
+    # },
+    # "email": "james@example.com"}
+
+    # credential_response = requests.post(url=url, headers=credential_header, json=credential_data)
+    # print(credential_response)
+
+
     # card_url = 'https://api.flutterwave.cloud/developersandbox/payment-methods'
     # card_header = { 'Authorization': 'Bearer {{YOUR_ACCESS_TOKEN}}', 'Content-Type': 'application/json', 'X-Trace-Id': '{{YOUR_UNIQUE_TRACE_ID}}', 'X-Idempotency-Key': '{{YOUR_UNIQUE_INDEMPOTENCY_KEY}}'}
     # data= {
@@ -360,7 +441,9 @@ def checkout():
     #     "nonce": "{{$randomly_generated_nonce}}"}
     # }
     # response = requests.post(url=card_url, headers=card_header, data=data)
-    return jsonify(credential_response.json())
+@app.route("/payment-method", methods=["GET", "POST"])
+def payment_method():
+    return render_template("payment-method.html")
 
 def token():
     url_1 = 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token'
@@ -438,3 +521,9 @@ def inventory():
 if __name__ == "__main__":
     app.run(debug=True)
 
+#     try:
+#         customer_list = requests.get(url, headers=headers, json=data)
+#         print(f"Customer ID: {customer_list.json()['data'][0]['id']}")
+#         print(customer_list.text)
+#     except Exception as e:
+#         return jsonify(e)

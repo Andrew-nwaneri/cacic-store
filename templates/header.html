@@ -96,6 +96,7 @@
 
 
     {% if current_user.is_authenticated %}
+          {% if cart_count %}
         <div class="flex-shrink-o mx-4">
             <a href="{{ url_for('cart') }}" class="checkout position-relative">
                 <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="black" class="bi bi-cart" viewBox="0 0 16 16">
@@ -106,7 +107,7 @@
                 </span>
             </a>
         </div>
-    {% endif %}
+    {% endif %}{% endif %}
         <div class="flex-shrink-0 dropdown">
           <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-gear" viewBox="0 0 16 16">
