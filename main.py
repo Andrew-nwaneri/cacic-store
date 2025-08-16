@@ -1,3 +1,5 @@
+from os import access
+
 from flask import Flask, abort, render_template, redirect, url_for, flash, request, jsonify
 from flask_bootstrap import Bootstrap5
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
@@ -7,10 +9,20 @@ from sqlalchemy import Integer, String, Text, Float, Boolean
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from forms import RegisterForm, LoginForm, CommentForm, Add, EditItem
+import requests
+import base64
+import secrets
+import string
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import os
+import uuid
+
 
 app = Flask(__name__)
 Bootstrap5(app)
+client_id = "c00c4196-adc1-4976-aac5-d591a78542ff"
+client_secret = "tQEKaUHsxf2J833xWpwyJLyjpcXuqwhH"
+encryption_key = "jQAOttdsQO+jH6pVr1ANW1HTHAOpeP5uTxMFaj2S/CE="
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -19,24 +31,38 @@ application = app
 def load_user(user_id):
     return db.get_or_404(User, user_id)
 
-#!/bin/sh
-url="https://api.paystack.co/transaction/initialize"
-authorization="Authorization: Bearer YOUR_SECRET_KEY"
-content_type="Content-Type: application/json"
-data='{"email": "customer@email.com", "amount": "20000"}'
-
-# curl "$url" -H "$authorization" -H "$content_type" -d "$data" -X POST
 
 
-# For adding profile images to the comment section
-# gravatar = Gravatar(app,
-#                     size=100,
-#                     rating='g',
-#                     default='retro',
-#                     force_default=False,
-#                     force_lower=False,
-#                     use_ssl=False,
-#                     base_url=None)
+class AESEncryptor:
+    def __init__(self, encryption_key: str):
+        self.aes_key = base64.b64decode(encryption_key)
+
+    @staticmethod
+    def generate_nonce(length: int = 12) -> str:
+        characters = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(characters) for _ in range(length))
+
+    def encrypt(self, plain_text: str, nonce: str) -> str:
+        if not plain_text or not nonce:
+            raise ValueError('Both plain_text and nonce are required for encryption.')
+
+        nonce_bytes = nonce.encode()
+        aes_gcm = AESGCM(self.aes_key)
+        cipher_text = aes_gcm.encrypt(nonce_bytes, plain_text.encode(), None)
+
+        return base64.b64encode(cipher_text).decode()
+
+    def encrypt_dict(self, data: dict) -> dict:
+        if not isinstance(data, dict):
+            raise ValueError("Data must be a dictionary.")
+
+        nonce = self.generate_nonce()
+        encrypted_data = {"nonce": nonce}
+
+        for key, value in data.items():
+            encrypted_data[key] = self.encrypt(str(value), nonce)
+
+        return encrypted_data
 
 
 class Base(DeclarativeBase):
@@ -192,7 +218,7 @@ def home():
         return render_template("index.html", user=current_user, stocks=stocks, cart_count=cart_count, page='Products')
     else:
         cart_count = len(current_user.cart) if current_user.is_authenticated else 0
-        return render_template("index.html", user=current_user, stocks=inventory_dict, cart_count=cart_count, page='This Is a Demo Product Page - current Inventory Database is empty')
+        return render_template("index.html", user=current_user, stocks=inventory_dict, cart_count=cart_count, page='This Is a Demo Product Page - current inventory Database is empty')
 
 
 @app.route('/register', methods=["GET", "POST"])
@@ -276,7 +302,7 @@ def add_new_item():
 def landing():
     return render_template("landing.html")
 
-@app.route('/checkout')
+@app.route('/cart')
 def cart():
     if not current_user.is_authenticated:
         flash("You need to login or register to add items to your cart.")
@@ -290,6 +316,59 @@ def cart():
             prices.append(price)
         total = sum(prices)
         return render_template("cart.html", cart=current_user_cart, cart_count=cart_count, total=clean(total))
+
+@app.route("/checkout", methods=["GET", "POST"])
+def checkout():
+    trace_id = str(uuid.uuid4())
+    idempotency_key = str(uuid.uuid4())
+    access_token = token()
+
+    bearer = f'Bearer {access_token}'
+    credential_url = 'https://api.flutterwave.cloud/developersandbox/customers'
+    credential_header = {'Authorization' : bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
+    credential_data = {
+    "address": {
+        "city": "Gotham",
+        "country": "US",
+        "line1": "221B Baker Street",
+        "line2": "b",
+        "postal_code": "94105",
+        "state": "Colorado"
+    },
+    "name": {
+        "first": "King",
+        "middle": "Leo",
+        "last": "James"
+    },
+    "phone": {
+        "country_code": "1",
+        "number": "6313958745"
+    },
+    "email": "james@example.com"}
+
+    credential_response = requests.post(url=credential_url, headers=credential_header, json=credential_data)
+    print(credential_response)
+    # card_url = 'https://api.flutterwave.cloud/developersandbox/payment-methods'
+    # card_header = { 'Authorization': 'Bearer {{YOUR_ACCESS_TOKEN}}', 'Content-Type': 'application/json', 'X-Trace-Id': '{{YOUR_UNIQUE_TRACE_ID}}', 'X-Idempotency-Key': '{{YOUR_UNIQUE_INDEMPOTENCY_KEY}}'}
+    # data= {
+    # "type": "card",
+    # "card": {
+    #     "encrypted_card_number": "{{$encrypted_card_number}}",
+    #     "encrypted_expiry_month": "{{$encrypted_expiry_month}}",
+    #     "encrypted_expiry_year": "{{$encrypted_expiry_year}}",
+    #     "encrypted_cvv": "{{$encrypted_cvv}}",
+    #     "nonce": "{{$randomly_generated_nonce}}"}
+    # }
+    # response = requests.post(url=card_url, headers=card_header, data=data)
+    return jsonify(credential_response.json())
+
+def token():
+    url_1 = 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token'
+    data_1 = {'client_id' : client_id, 'client_secret' : client_secret, 'grant_type': 'client_credentials'}
+    response_1 = requests.post(url_1, data=data_1)
+    access_token = response_1.json()["access_token"]
+    return access_token
+
 
 @app.route("/delete/<int:post_id>")
 @admin_only

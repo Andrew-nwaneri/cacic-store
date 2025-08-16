@@ -1,5 +1,6 @@
 {% block content %}
 {% include "header.html" %}
+
     <style>
         /* Custom styles for the delete button SVG icon size, as Bootstrap doesn't have direct utilities for this */
         .delete-icon {
@@ -58,7 +59,7 @@
                 </li>
                 {% endfor %}
             </ul>
-        <div><a href="" class="fw-bold fs-6 btn btn-lg d-flex flex-grow-1 rounded shadow-sm p-3 mb-3 text-light" style="background-color: #dcb45c;">Checkout ~ ₦{{ total }}</a></div>
+        <div><a href="{{ url_for('checkout', total=total) }}" class="fw-bold fs-6 btn btn-lg d-flex flex-grow-1 rounded shadow-sm p-3 mb-3 text-light" style="background-color: #dcb45c;">Checkout ~ ₦{{ total }}</a></div>
         </div>
     </div>
 </div>
@@ -66,6 +67,7 @@
 
 
 {% endblock %}
+
 {{ bootstrap.load_js() }}
 {% include "footer.html" %}
 

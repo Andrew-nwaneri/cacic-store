@@ -38,6 +38,34 @@ class EditItem(FlaskForm):
     price = FloatField("Price?", validators=[DataRequired()])
     unit = StringField("Unit of measurement?", validators=[DataRequired()])
     submit = SubmitField("Edit")
+
+class Cred(FlaskForm):
+    name = StringField("Name of item", validators=[DataRequired()])
+    description = StringField("Description?", validators=[DataRequired()])
+    img_url = StringField("Link to image", validators=[DataRequired(), URL()])
+    price = FloatField("Price?", validators=[DataRequired()])
+    unit = StringField("Unit of measurement?", validators=[DataRequired()])
+    submit = SubmitField("Submit Item")
+
+    credential_data = {
+    "address": {
+        "city": "Gotham",
+        "country": "US",
+        "line1": "221B Baker Street",
+        "line2": "b",
+        "postal_code": "94105",
+        "state": "Colorado"
+    },
+    "name": {
+        "first": "King",
+        "middle": "Leo",
+        "last": "James"
+    },
+    "phone": {
+        "country_code": "1",
+        "number": "6313958745"
+    },
+    "email": "james@example.com"}
 #     <meta charset="UTF-8">
 #     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 #     <title>CACIC SYNERGY</title>
