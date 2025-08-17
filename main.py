@@ -27,6 +27,8 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 login_manager = LoginManager()
 login_manager.init_app(app)
 application = app
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.get_or_404(User, user_id)
