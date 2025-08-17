@@ -1,4 +1,4 @@
-from os import access
+import random
 
 from flask import Flask, abort, render_template, redirect, url_for, flash, request, jsonify
 from flask_bootstrap import Bootstrap5
@@ -31,7 +31,9 @@ application = app
 def load_user(user_id):
     return db.get_or_404(User, user_id)
 
+countries = {
 
+}
 
 class AESEncryptor:
     def __init__(self, encryption_key: str):
@@ -77,6 +79,16 @@ def clean(data):
         return f"{whole}.{decimal}"
     else:
         return format(int(number), ",")
+
+
+def token():
+    url_1 = 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token'
+    data_1 = {'client_id' : client_id, 'client_secret' : client_secret, 'grant_type': 'client_credentials'}
+    response_1 = requests.post(url_1, data=data_1)
+    access_token = response_1.json()["access_token"]
+    return access_token
+
+
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DB_STORE", "sqlite:///users.db")
 db = SQLAlchemy(model_class=Base)
@@ -160,6 +172,7 @@ inventory_dict = [{
         "price": 68500.0,
         "unit": "25Litre"
     }]
+
 
 @app.route("/add-to-cart/<int:item_id>", methods=["POST"])
 def add_to_cart(item_id):
@@ -345,6 +358,7 @@ def checkout():
         city = request.form.get("city")
         country_code = request.form.get("country_code")
         country = request.form.get("country")
+        payment_option = request.form.get("paymentMethod")
         required_fields = {
             "First Name": first_name,
             "Last Name": last_name,
@@ -355,7 +369,8 @@ def checkout():
             "Postal Code": post_code,
             "Country": country,
             "City": city,
-            "Country Code": country_code
+            "Country Code": country_code,
+            "Payment Option": payment_option
         }
 
         for field_name, value in required_fields.items():
@@ -369,8 +384,10 @@ def checkout():
             search_response = requests.post(search_url, headers=search_headers, json=search_data)
             if not search_response.json()['data']:
                 credential_header = {'Authorization' : bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
-                credential_data = {
-                "address": {
+                credential_data = None
+                if middle_name and address2:
+                    credential_data = {
+                    "address": {
                     "city": city,
                     "country": country,
                     "line1": address,
@@ -388,69 +405,135 @@ def checkout():
                     "number": phone_number
                 },
                 "email": mail}
-
+                elif middle_name and not address2:
+                    credential_data = {
+                    "address": {
+                    "city": city,
+                    "country": country,
+                    "line1": address,
+                    "postal_code": post_code,
+                    "state": state
+                    },
+                    "name": {
+                        "first": first_name,
+                        "middle": middle_name,
+                        "last": last_name
+                    },
+                    "phone": {
+                        "country_code": country_code,
+                        "number": phone_number
+                    },
+                    "email": mail}
+                elif address2 and not middle_name:
+                    credential_data = {
+                    "address": {
+                    "city": city,
+                    "country": country,
+                    "line1": address,
+                    "line2": address2,
+                    "postal_code": post_code,
+                    "state": state
+                    },
+                    "name": {
+                        "first": first_name,
+                        "last": last_name
+                    },
+                    "phone": {
+                        "country_code": country_code,
+                        "number": phone_number
+                    },
+                    "email": mail}
+                else:
+                    credential_data = {
+                        "address": {
+                            "city": city,
+                            "country": country,
+                            "line1": address,
+                            "postal_code": post_code,
+                            "state": state
+                        },
+                        "name": {
+                            "first": first_name,
+                            "last": last_name
+                        },
+                        "phone": {
+                            "country_code": country_code,
+                            "number": phone_number
+                        },
+                        "email": mail}
                 credential_response = requests.post(url=url, headers=credential_header, json=credential_data)
-                print(credential_response)
-                return redirect(url_for('payment_method'))
+                if credential_response.json()["status"] == "success":
+                    return redirect(url_for('payment_method', cacic=bearer))
+                else:
+                    return jsonify(credential_response.json())
 
             else:
                 print(search_response.json()['data'])
-                return render_template("payment_method.html", cart_count=cart_count)
+                return redirect(url_for("payment_method", cart_count=cart_count, cacic=bearer))
 
         except Exception as e:
             print(e)
             return jsonify({"STATUS": "Failed"})
     return render_template("processing.html", cart_count=cart_count)
 
-
-
-    # credential_header = {'Authorization' : bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
-    # credential_data = {
-    # "address": {
-    #     "city": "Gotham",
-    #     "country": "US",
-    #     "line1": "221B Baker Street",
-    #     "line2": "b",
-    #     "postal_code": "94105",
-    #     "state": "Colorado"
-    # },
-    # "name": {
-    #     "first": "King",
-    #     "middle": "Leo",
-    #     "last": "James"
-    # },
-    # "phone": {
-    #     "country_code": "1",
-    #     "number": "6313958745"
-    # },
-    # "email": "james@example.com"}
-
-    # credential_response = requests.post(url=url, headers=credential_header, json=credential_data)
-    # print(credential_response)
-
-
-    # card_url = 'https://api.flutterwave.cloud/developersandbox/payment-methods'
-    # card_header = { 'Authorization': 'Bearer {{YOUR_ACCESS_TOKEN}}', 'Content-Type': 'application/json', 'X-Trace-Id': '{{YOUR_UNIQUE_TRACE_ID}}', 'X-Idempotency-Key': '{{YOUR_UNIQUE_INDEMPOTENCY_KEY}}'}
-    # data= {
-    # "type": "card",
-    # "card": {
-    #     "encrypted_card_number": "{{$encrypted_card_number}}",
-    #     "encrypted_expiry_month": "{{$encrypted_expiry_month}}",
-    #     "encrypted_expiry_year": "{{$encrypted_expiry_year}}",
-    #     "encrypted_cvv": "{{$encrypted_cvv}}",
-    #     "nonce": "{{$randomly_generated_nonce}}"}
-    # }
-    # response = requests.post(url=card_url, headers=card_header, data=data)
-@app.route("/payment-method", methods=["GET", "POST"])
+@app.route("/payment-method")
 def payment_method():
-    return render_template("payment-method.html")
+    bearer = request.args.get("cacic")
+    print(bearer)
+    return render_template("payment-method.html", cacic=bearer)
 
-def token():
-    url_1 = 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token'
-    data_1 = {'client_id' : client_id, 'client_secret' : client_secret, 'grant_type': 'client_credentials'}
-    response_1 = requests.post(url_1, data=data_1)
-    access_token = response_1.json()["access_token"]
-    return access_token
+@app.route("/payment", methods=["GET", "POST"])
+def pay():
+    method = request.args.get("method")
+    nonce = random.randint(100000000000, 999999999999)
+    bearer = request.args.get("cacic")
+    trace_id = request.args.get('trace')
+    idempotency_key = request.args.get('id_key')
+    url = 'https://api.flutterwave.cloud/developersandbox/payment-methods'
+    header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
+
+    print(nonce)
+    print(method)
+    print(trace_id)
+    print(idempotency_key)
+    print(bearer)
+    if method == "Card":
+        data= {
+        "type": "card",
+        "card": {
+            "encrypted_card_number": "{{$encrypted_card_number}}",
+            "encrypted_expiry_month": "{{$encrypted_expiry_month}}",
+            "encrypted_expiry_year": "{{$encrypted_expiry_year}}",
+            "encrypted_cvv": "{{$encrypted_cvv}}",
+            "nonce": nonce}
+        }
+        response = requests.post(url=url, headers=header, json=data)
+
+    elif method == "mobileMoney":
+        data= {
+            "type": "mobile_money",
+            "mobile_money": {
+                "country_code": country_code,
+                "network": network,
+                "phone_number": phone_number
+            }
+            }
+        response = requests.post(url=url, headers=header, json=data)
+
+    elif method == "Opay":
+        data = {"type": "opay"}
+        response = requests.post(url=url, headers=header, json=data)
+    elif method == "googlePay":
+        data = {"type":"googlepay",
+                "googlepay":{
+                    "card_holder_name":"John Doe"
+                }
+                }
+        response = requests.post(url=url, headers=header, json=data)
+    else:
+        return jsonify({400 :{"Message": "Invalid Request"}})
+    return render_template("payment.html")
+
 
 
 @app.route("/delete/<int:post_id>")

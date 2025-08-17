@@ -5,6 +5,11 @@
     <title>Title</title>
 </head>
 <body>
-hi
+<div class="container">
+<a href="{{ url_for( 'pay', method='Card', cacic=bearer ) }}">Card</a>
+<a href="{{ url_for( 'pay', method='Opay', cacic=bearer ) }}">Opay</a>
+<a href="{{ url_for( 'pay', method='mobileMoney', cacic=bearer ) }}">Mobile Money</a>
+<a href="{{ url_for( 'pay', method='googlePay', cacic=bearer ) }}">Google Pay</a>
+</div>
 </body>
 </html>

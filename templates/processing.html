@@ -15,8 +15,12 @@
         }
 </style>
 
+<div class="container my-4">
 <main>
-<div class="container">
+    <div class="row g-5">
+    <div class="col-md-5 col-lg-4 order-md-last"> <h5 class="d-flex justify-content-between align-items-center mb-3"> <span class="text-secondary">Your cart</span> <span class="badge bg-danger rounded-pill">3</span> </h5> <ul class="list-group mb-3"> <li class="list-group-item d-flex justify-content-between lh-sm"> <div> <h6 class="my-0">Product name</h6> <small class="text-body-secondary">Brief description</small> </div> <span class="text-body-secondary">$12</span> </li> <li class="list-group-item d-flex justify-content-between lh-sm"> <div> <h6 class="my-0">Second product</h6> <small class="text-body-secondary">Brief description</small> </div> <span class="text-body-secondary">$8</span> </li> <li class="list-group-item d-flex justify-content-between lh-sm"> <div> <h6 class="my-0">Third item</h6> <small class="text-body-secondary">Brief description</small> </div> <span class="text-body-secondary">$5</span> </li> <li class="list-group-item d-flex justify-content-between bg-body-tertiary"> <div class="text-success"> <h6 class="my-0">Promo code</h6> <small>EXAMPLECODE</small> </div> <span class="text-success">−$5</span> </li> <li class="list-group-item d-flex justify-content-between"> <span>Total (USD)</span> <strong>$20</strong> </li> </ul> <form class="card p-2"> <div class="input-group"> <input type="text" class="form-control" placeholder="Promo code"> <button type="submit" class="btn btn-secondary">Redeem</button> </div> </form> </div>
+<div class="col-md-7 col-lg-8">
+    <h5 class="mb-3">Billing address</h5>
     {% with messages = get_flashed_messages() %}
       {% if messages %}
       {% for message in messages %}
@@ -24,7 +28,7 @@
       {% endfor %}
       {% endif %}
       {% endwith %}
-<div class="col-md-7 col-lg-8"> <h4 class="mb-3">Billing address</h4> <form class="needs-validation" method="POST" novalidate=""> <div class="row g-3"> <div class="col-sm-6"> <label for="firstName" class="form-label">First name</label> <input type="text" class="form-control" id="firstName" name="firstName" placeholder="" value="" required=""> <div class="invalid-feedback">
+    <form class="needs-validation" method="POST" novalidate=""> <div class="row g-3"> <div class="col-sm-6"> <label for="firstName" class="form-label">First name</label> <input type="text" class="form-control" id="firstName" name="firstName" placeholder="" value="" required=""> <div class="invalid-feedback">
 Valid first name is required.
 </div> </div> <div class="col-sm-6"> <label for="lastName" class="form-label">Last name</label> <input type="text" class="form-control" id="lastName" name="lastName" placeholder="" value="" required=""> <div class="invalid-feedback">
 Valid last name is required.
@@ -33,11 +37,13 @@ Valid last name is required.
 <div class="col-md-3"> <label for="country_code" class="form-label">Country Code</label><input type="number" class="form-control" id="country_code" name="country_code" placeholder="Country Code"><div class="invalid-feedback">
 Please select a valid country code.
 </div> </div>
-    <div class="col-md-9"> <label for="phone-number" class="form-label">Phone Number</label> <div class="input-group has-validation"> <span class="input-group-text">@</span> <input type="number" class="form-control" id="phone-number" name="phone-number" placeholder="Phone Number" required=""> <div class="invalid-feedback">
+    <div class="col-md-9"> <label for="phone-number" class="form-label">Phone Number</label> <div class="input-group has-validation"> <span class="input-group-text"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-telephone" viewBox="0 0 16 16">
+  <path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.6 17.6 0 0 0 4.168 6.608 17.6 17.6 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.68.68 0 0 0-.58-.122l-2.19.547a1.75 1.75 0 0 1-1.657-.459L5.482 8.062a1.75 1.75 0 0 1-.46-1.657l.548-2.19a.68.68 0 0 0-.122-.58zM1.884.511a1.745 1.745 0 0 1 2.612.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.68.68 0 0 0 .178.643l2.457 2.457a.68.68 0 0 0 .644.178l2.189-.547a1.75 1.75 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.6 18.6 0 0 1-7.01-4.42 18.6 18.6 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877z"/>
+</svg></span> <input type="number" class="form-control" id="phone-number" name="phone-number" placeholder="Phone Number" required=""> <div class="invalid-feedback">
         Your phone number is required.</div>
     </div></div>
 
-    <div class="col-12"> <label for="email" class="form-label">Email <span class="text-body-secondary">(Optional)</span></label> <input type="email" class="form-control" id="email" name="email" placeholder="you@example.com"> <div class="invalid-feedback">
+    <div class="col-12"> <label for="email" class="form-label">Email </label> <input type="email" class="form-control" id="email" name="email" placeholder="you@example.com"> <div class="invalid-feedback">
 Please enter a valid email address for shipping updates.
 </div> </div> <div class="col-12"> <label for="city" class="form-label">City</label> <input type="text" class="form-control" id="city" name="city" placeholder="City" required=""> <div class="invalid-feedback">
 Please enter your city.
@@ -46,15 +52,32 @@ Please enter your city.
 Please enter your shipping address.
 </div> </div>
     <div class="col-12"> <label for="address2" class="form-label">Address 2 <span class="text-body-secondary">(Optional)</span></label> <input type="text" class="form-control" id="address2" name="address2" placeholder="Apartment or suite"> </div>
-    <div class="col-md-5"> <label for="country" class="form-label">Country</label><input type="text" class="form-control" id="country" name="country" placeholder="Country" value="" required=""> <div class="invalid-feedback">
+    <div class="col-md-5"> <label for="country" class="form-label">Country</label> <select class="form-select" id="country" required=""> <option value="">Choose...</option> <option value="NG">Nigeria</option> <option value="US">United States</option> <option value="UK">United Kingdom</option> <option value="CA">Canada</option> <option value="GH">Ghana</option> <option value="ZA">South Africa</option> </select> <div class="invalid-feedback">
 Please select a valid country.
 </div> </div> <div class="col-md-4"> <label for="state" class="form-label">State</label><input type="text" class="form-control" id="state" name="state" placeholder="State" value="" required=""><div class="invalid-feedback">
 Please provide a valid state.
 </div> </div> <div class="col-md-3"> <label for="postCode" class="form-label">Postal Code</label> <input type="text" class="form-control" id="postCode" name="postCode" placeholder="" required=""> <div class="invalid-feedback">
 Postal code required.
-</div> </div> </div>  <hr class="my-4"> <button class="w-100 btn btn-primary btn-lg" type="submit">Continue to checkout</button> </form> </div>
+</div> </div> </div>
+    <hr class="m-4">
+    <h5 class="mb-3">Payment Options</h5>
+    <div class="my-3">
+        <div class="form-check"> <input id="Card" name="paymentMethod" type="radio" class="form-check-input" checked="" required=""> <label class="form-check-label" for="Card">Card</label> </div>
+        <div class="form-check"> <input id="Opay" name="paymentMethod" type="radio" class="form-check-input" required=""> <label class="form-check-label" for="Opay">Opay</label> </div>
+        <div class="form-check"> <input id="googlePay" name="paymentMethod" type="radio" class="form-check-input" required=""> <label class="form-check-label" for="googlePay">Google Pay</label> </div>
+        <div class="form-check"> <input id="mobileMoney" name="paymentMethod" type="radio" class="form-check-input" required=""> <label class="form-check-label" for="mobileMoney">Mobile Money</label> </div>
+    </div>
+    <hr class="my-4">
+        <div class="">
+            <button class="col-3 btn btn-success btn-md" type="submit">Order via <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="white" class="bi bi-whatsapp mx-1" viewBox="0 0 16 16">
+          <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+                <use xlink:href="#WHATSAPP"></use></svg></button>
+            <button class="w-80 col-8 btn btn-secondary btn-lg" type="submit">Continue to checkout</button> </div>
+
+    </form>
 </div>
-</main>
+</div>
+</main></div>
 {% include "footer.html" %}
 <script src="/docs/5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" class="astro-vvvwv3sm"></script>
 <script src="checkout.js" class="astro-vvvwv3sm"></script>
