@@ -42,7 +42,7 @@
         {% for items in cart %}
 <li class="list-group-item d-flex justify-content-between align-items-center bg-white rounded shadow-sm p-3 mb-3 border">
                     <div class="d-flex align-items-center flex-grow-1">
-                        <a href="{{ url_for('view', item_id=items.id) }}" target="_blank" class="text-decoration-none text-dark d-flex align-items-center">
+                        <a href="{{ url_for('view', item_id=items.item_id) }}" target="_blank" class="text-decoration-none text-dark d-flex align-items-center">
                             <div class="product-img-container me-3">
                                 <img src="{{ items.product.img_url }}"
                                      alt="Product Thumbnail"
@@ -102,7 +102,7 @@ Please enter your city.
 Please enter your shipping address.
 </div> </div>
     <div class="col-12"> <label for="address2" class="form-label">Address 2 <span class="text-body-secondary">(Optional)</span></label> <input type="text" class="form-control" id="address2" name="address2" placeholder="Apartment or suite"> </div>
-    <div class="col-md-5"> <label for="country" class="form-label">Country</label> <select class="form-select" id="country" required=""> <option value="">Choose...</option> <option value="NG">Nigeria</option> <option value="US">United States</option> <option value="UK">United Kingdom</option> <option value="CA">Canada</option> <option value="GH">Ghana</option> <option value="ZA">South Africa</option> </select> <div class="invalid-feedback">
+    <div class="col-md-5"> <label for="country" class="form-label">Country</label> <select class="form-select" id="country" name="country" required=""><option value="NG">Nigeria</option> <option value="US">United States</option> <option value="UK">United Kingdom</option> <option value="CA">Canada</option> <option value="GH">Ghana</option> <option value="ZA">South Africa</option> <option value="JP">Japan</option></select> <div class="invalid-feedback">
 Please select a valid country.
 </div> </div> <div class="col-md-4"> <label for="state" class="form-label">State</label><input type="text" class="form-control" id="state" name="state" placeholder="State" value="" required=""><div class="invalid-feedback">
 Please provide a valid state.
@@ -112,36 +112,29 @@ Postal code required.
     <hr class="m-4">
 <h5 class="mb-3">Payment Options</h5>
 <div class="my-3">
-    <div class="form-check"> <input id="card" name="paymentMethod" type="radio" class="form-check-input" checked="" required=""> <label class="form-check-label" for="card">Card</label> </div>
-    <div class="form-check"> <input id="opay" name="paymentMethod" type="radio" class="form-check-input" required=""> <label class="form-check-label" for="opay">Opay</label> </div>
-    <div class="form-check"> <input id="googlePay" name="paymentMethod" type="radio" class="form-check-input" required=""> <label class="form-check-label" for="googlePay">Google Pay</label> </div>
-    <div class="form-check"> <input id="mobileMoney" name="paymentMethod" type="radio" class="form-check-input" required=""> <label class="form-check-label" for="mobileMoney">Mobile Money</label> </div>
+    <div class="form-check"> <input id="card" name="paymentMethod" value="card" type="radio" class="form-check-input" checked="" required=""> <label class="form-check-label" for="card">Card</label> </div>
+    <div class="form-check"> <input id="opay" name="paymentMethod" value="opay" type="radio" class="form-check-input" required=""> <label class="form-check-label" for="opay">Opay</label> </div>
+    <div class="form-check"> <input id="googlePay" name="paymentMethod" value="googlePay" type="radio" class="form-check-input" required=""> <label class="form-check-label" for="googlePay">Google Pay</label> </div>
+    <div class="form-check"> <input id="mobileMoney" name="paymentMethod" value="mobileMoney" type="radio" class="form-check-input" required=""> <label class="form-check-label" for="mobileMoney">Mobile Money</label> </div>
 </div>
-
-<hr class="m-4">
 
 <div id="card-form">
-    <div class="mb-3">
-        <label for="card-holder">Name on card</label>
-        <input type="text" class="form-control" id="card-holder" placeholder="Full name as displayed on card">
-    </div>
-    <div class="mb-3">
-        <label for="card-number">Credit card number</label>
-        <input type="text" class="form-control" id="card-number">
-    </div>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="card-expiration">Expiration</label>
-            <input type="text" class="form-control" id="card-expiration">
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="card-cvv">CVV</label>
-            <input type="text" class="form-control" id="card-cvv">
-        </div>
-    </div>
+    <div class="row gy-3"> <div class="col-md-6"> <label for="cc-name" class="form-label">Name on card</label> <input type="text" class="form-control" id="cc-name" name="cc-name" placeholder="" required=""> <small class="text-body-secondary">Full name as displayed on card</small> <div class="invalid-feedback">
+    Name on card is required
+    </div> </div> <div class="col-md-6"> <label for="cc-number" class="form-label">Credit card number</label> <input type="text" class="form-control" id="cc-number" name="cc-number" placeholder="" required=""> <div class="invalid-feedback">
+    Credit card number is required
+    </div> </div> <div class="col-md-3"> <label for="cc-month" class="form-label">Expiration Month</label> <input type="text" class="form-control" id="cc-month" name="cc-month" placeholder="" required=""> <div class="invalid-feedback">
+    Expiration date required
+    </div> </div>  <div class="col-md-3"> <label for="cc-year" class="form-label">Expiration Year</label> <input type="text" class="form-control" id="cc-year" name="cc-year" placeholder="" required=""> <div class="invalid-feedback">
+    Expiration date required
+    </div> </div> <div class="col-md-6"> <label for="cc-cvv" class="form-label">CVV</label> <input type="text" class="form-control" id="cc-cvv" name="cc-cvv" placeholder="" required=""> <div class="invalid-feedback">
+    Security code required
+    </div> </div></div>
+
+
 </div>
 
-        <div id="opay-form" style="display:none;"></div>
+<div id="opay-form" style="display:none;"></div>
 
 <div id="googlePay-form" style="display:none;">
     <div class="mb-3">
@@ -151,18 +144,19 @@ Postal code required.
 </div>
 
 <div id="mobileMoney-form" style="display:none;">
-    <div class="mb-3">
-        <label for="mobileMoney-country-code">Country Code</label>
-        <input type="text" class="form-control" id="mobileMoney-country-code">
-    </div>
-    <div class="mb-3">
-        <label for="mobileMoney-phone-number">Phone Number</label>
-        <input type="text" class="form-control" id="mobileMoney-phone-number">
-    </div>
-    <div class="mb-3">
-        <label for="mobileMoney-network">Mobile Network</label>
-        <input type="text" class="form-control" id="mobileMoney-network">
-    </div>
+    <div class="row gy-3">
+<div class="col-md-3"> <label for="mobile_code" class="form-label">Country code</label><input type="number" class="form-control" id="mobile_code" name="mobile_code" placeholder="Country Code"><div class="invalid-feedback">
+Please select a valid country code.
+</div> </div>
+    <div class="col-md-9"> <label for="phone-number" class="form-label">Phone number</label> <div class="input-group has-validation"> <span class="input-group-text"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-telephone" viewBox="0 0 16 16">
+  <path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.6 17.6 0 0 0 4.168 6.608 17.6 17.6 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.68.68 0 0 0-.58-.122l-2.19.547a1.75 1.75 0 0 1-1.657-.459L5.482 8.062a1.75 1.75 0 0 1-.46-1.657l.548-2.19a.68.68 0 0 0-.122-.58zM1.884.511a1.745 1.745 0 0 1 2.612.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.68.68 0 0 0 .178.643l2.457 2.457a.68.68 0 0 0 .644.178l2.189-.547a1.75 1.75 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.6 18.6 0 0 1-7.01-4.42 18.6 18.6 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877z"/>
+</svg></span> <input type="text" class="form-control" id="mobile_number" name="mobile_number" placeholder="Phone Number" required=""> <div class="invalid-feedback">
+        Your phone number is required.</div>
+    </div></div></div>
+
+    <div class="col-md-5"> <label for="mobileMoney-network" class="form-label">Mobile network</label> <select class="form-select" id="mobileMoney-network" required="" name="mobileMoney-network"> <option value="">Choose...</option> <option value="MTN">MTN</option> <option value="GLO">GLO</option> <option value="AIRTEL">AIRTEL</option> <option value="ETISALAT">ETISALAT</option> </select> <div class="invalid-feedback">
+Please select your network.
+</div> </div>
 </div>
     <hr class="my-4">
         <div class="p-2">

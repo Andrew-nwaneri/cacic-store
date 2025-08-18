@@ -1,5 +1,5 @@
 import random
-
+import ast
 from flask import Flask, abort, render_template, redirect, url_for, flash, request, jsonify
 from flask_bootstrap import Bootstrap5
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
@@ -63,6 +63,8 @@ class AESEncryptor:
             encrypted_data[key] = self.encrypt(str(value), nonce)
 
         return encrypted_data
+
+alien = AESEncryptor(encryption_key=encryption_key)
 
 
 class Base(DeclarativeBase):
@@ -317,15 +319,9 @@ def add_new_item():
 def landing():
     return render_template("landing.html")
 
-# @app.route('/cart')
-# def cart():
-#         return render_template("cart.html")
 
 @app.route("/checkout", methods=["GET", "POST"])
 def cart():
-    cart_count = 0
-    total = 0
-    current_user_cart = 0
     trace_id = str(uuid.uuid4())
     idempotency_key = str(uuid.uuid4())
     access_token = token()
@@ -343,12 +339,19 @@ def cart():
             price = items.amount * items.product.price
             prices.append(price)
         total = sum(prices)
-
+    else:
+        cart_count = 0
+        total = 0
+        current_user_cart = 0
     if request.method == "POST":
+        nonce = alien.generate_nonce(12)
         first_name = request.form.get("firstName")
         middle_name = request.form.get("middleName")
         last_name = request.form.get("lastName")
-        phone_number = request.form.get("phone-number")
+        if len(request.form.get("phone-number")) == 11:
+            phone_number = request.form.get("phone-number")[1:]
+        else:
+            phone_number = request.form.get("phone-number")
         mail = request.form.get("email")
         address = request.form.get("address")
         address2 = request.form.get("address2")
@@ -358,34 +361,98 @@ def cart():
         country_code = request.form.get("country_code")
         country = request.form.get("country")
         payment_option = request.form.get("paymentMethod")
-        required_fields = {
-            "First Name": first_name,
-            "Last Name": last_name,
-            "Phone Number": phone_number,
-            "Email": mail,
-            "Address": address,
-            "State": state,
-            "Postal Code": post_code,
-            "Country": country,
-            "City": city,
-            "Country Code": country_code,
-            "Payment Option": payment_option
-        }
 
+        if payment_option == 'opay':
+            required_fields = {
+                "First Name": first_name,
+                "Last Name": last_name,
+                "Phone Number": phone_number,
+                "Email": mail,
+                "Address": address,
+                "State": state,
+                "Postal Code": post_code,
+                "Country": country,
+                "City": city,
+                "Country Code": country_code,
+                "Payment Option": payment_option,
+                "nonce": nonce
+            }
+
+        elif payment_option == "card":
+            holder = alien.encrypt(request.form.get("cc-name"), nonce=nonce)
+            cvv = alien.encrypt(request.form.get("cc-cvv"), nonce=nonce)
+            expiration_month = alien.encrypt(request.form.get("cc-month"), nonce=nonce)
+            expiration_year = alien.encrypt(request.form.get("cc-year"), nonce=nonce)
+            cc_number = alien.encrypt(request.form.get("cc-number"), nonce=nonce)
+            required_fields = {
+                "First Name": first_name,
+                "Last Name": last_name,
+                "Phone Number": phone_number,
+                "Email": mail,
+                "Address": address,
+                "State": state,
+                "Postal Code": post_code,
+                "Country": country,
+                "City": city,
+                "Country Code": country_code,
+                "Payment Option": payment_option,
+                "holder": holder,
+                "cvv": cvv,
+                "expiration_month": expiration_month,
+                "expiration_year": expiration_year,
+                "cc_number": cc_number,
+                "nonce": nonce
+            }
+
+        elif payment_option == "googlePay":
+            holder = request.form.get("googlePay-card-holder")
+            required_fields = {
+                "First Name": first_name,
+                "Last Name": last_name,
+                "Phone Number": phone_number,
+                "Email": mail,
+                "Address": address,
+                "State": state,
+                "Postal Code": post_code,
+                "Country": country,
+                "City": city,
+                "Country Code": country_code,
+                "Payment Option": payment_option,
+                "holder": holder,
+                "nonce": nonce
+            }
+
+        else:
+            mobile = request.form.get("mobile_number")
+            mobile_code = request.form.get("mobile_code")
+            network = request.form.get("mobileMoney-network")
+            required_fields = {
+                "First Name": first_name,
+                "Last Name": last_name,
+                "Phone Number": phone_number,
+                "Email": mail,
+                "Address": address,
+                "State": state,
+                "Postal Code": post_code,
+                "Country": country,
+                "City": city,
+                "Country Code": country_code,
+                "Payment Option": payment_option,
+                "mobile_code": mobile_code,
+                "network": network,
+                "mobile": mobile,
+                "nonce": nonce
+            }
         for field_name, value in required_fields.items():
             if not value:
+                print(required_fields)
                 flash(f"{field_name} is a required field.")
                 return render_template("processing.html", cart_count=cart_count)
-        try:
-            search_url = "https://api.flutterwave.cloud/developersandbox/customers/search"
-            search_data = {'page': 1, 'size': 10, 'email': current_user.email}
-            search_headers = {'Authorization': bearer, "X-Trace-Id": trace_id}
-            search_response = requests.post(search_url, headers=search_headers, json=search_data)
-            if not search_response.json()['data']:
-                credential_header = {'Authorization' : bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
-                if middle_name and address2:
-                    credential_data = {
-                    "address": {
+
+        credential_header = {'Authorization': bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
+        if middle_name and address2:
+            credential_data = {
+                "address": {
                     "city": city,
                     "country": country,
                     "line1": address,
@@ -403,129 +470,144 @@ def cart():
                     "number": phone_number
                 },
                 "email": mail}
-                elif middle_name and not address2:
-                    credential_data = {
-                    "address": {
+        elif middle_name and not address2:
+            credential_data = {
+                "address": {
                     "city": city,
                     "country": country,
                     "line1": address,
                     "postal_code": post_code,
                     "state": state
-                    },
-                    "name": {
-                        "first": first_name,
-                        "middle": middle_name,
-                        "last": last_name
-                    },
-                    "phone": {
-                        "country_code": country_code,
-                        "number": phone_number
-                    },
-                    "email": mail}
-                elif address2 and not middle_name:
-                    credential_data = {
-                    "address": {
+                },
+                "name": {
+                    "first": first_name,
+                    "middle": middle_name,
+                    "last": last_name
+                },
+                "phone": {
+                    "country_code": country_code,
+                    "number": phone_number
+                },
+                "email": mail}
+        elif address2 and not middle_name:
+            credential_data = {
+                "address": {
                     "city": city,
                     "country": country,
                     "line1": address,
                     "line2": address2,
                     "postal_code": post_code,
                     "state": state
-                    },
-                    "name": {
-                        "first": first_name,
-                        "last": last_name
-                    },
-                    "phone": {
-                        "country_code": country_code,
-                        "number": phone_number
-                    },
-                    "email": mail}
-                else:
-                    credential_data = {
-                        "address": {
-                            "city": city,
-                            "country": country,
-                            "line1": address,
-                            "postal_code": post_code,
-                            "state": state
-                        },
-                        "name": {
-                            "first": first_name,
-                            "last": last_name
-                        },
-                        "phone": {
-                            "country_code": country_code,
-                            "number": phone_number
-                        },
-                        "email": mail}
-                credential_response = requests.post(url=url, headers=credential_header, json=credential_data)
-                if credential_response.json()["status"] == "success":
-                    return redirect(url_for('payment_method', cacic=bearer))
-                else:
-                    return jsonify(credential_response.json())
-
-            else:
-                print(search_response.json()['data'])
-                return redirect(url_for("payment_method", cart_count=cart_count, cacic=bearer))
+                },
+                "name": {
+                    "first": first_name,
+                    "last": last_name
+                },
+                "phone": {
+                    "country_code": country_code,
+                    "number": phone_number
+                },
+                "email": mail}
+        else:
+            credential_data = {
+                "address": {
+                    "city": city,
+                    "country": country,
+                    "line1": address,
+                    "postal_code": post_code,
+                    "state": state
+                },
+                "name": {
+                    "first": first_name,
+                    "last": last_name
+                },
+                "phone": {
+                    "country_code": country_code,
+                    "number": phone_number
+                },
+                "email": mail}
+        try:
+            search_url = 'https://api.flutterwave.cloud/developersandbox/customers/search'
+            search_data = {'page': 1, 'size': 10, 'email': current_user.email}
+            search_headers = {'Authorization': bearer, "X-Trace-Id": trace_id}
+            search_response = requests.post(search_url, headers=search_headers, json=search_data)
 
         except Exception as e:
-            print(e)
-            return jsonify({"STATUS": "Failed"})
+            return jsonify({
+                'success': False,
+                'message': f'{e}'
+            }), 500
+        if search_response.json()['data']:
+            update_url = f"https://api.flutterwave.cloud/developersandbox/customers/{search_response.json()['data'][0]['id']}"
+            update = requests.put(url=update_url, headers=credential_header, json=credential_data)
+            if update.json()["status"] == "success":
+                return redirect(
+                    url_for('pay', cacic=bearer, payment_option=payment_option, required_fields=required_fields,
+                            track_id=trace_id, id_key=idempotency_key, total=total))
+            else:
+                return jsonify(update.json())
+        else:
+            credential_response = requests.post(url=url, headers=credential_header, json=credential_data)
+            if credential_response.json()["status"] == "success":
+                return redirect(
+                    url_for('pay', cacic=bearer, payment_option=payment_option, required_fields=required_fields,
+                            track_id=trace_id, id_key=idempotency_key, total=total))
+            else:
+                return jsonify(credential_response.json())
     return render_template("processing.html", cart=current_user_cart, cart_count=cart_count, total=clean(total))
 
 
 @app.route("/payment", methods=["GET", "POST"])
 def pay():
-    method = request.args.get("method")
-    nonce = random.randint(100000000000, 999999999999)
+    transaction_reference = str(uuid.uuid4())
+    print(transaction_reference)
+    method = request.args.get("payment_option")
     bearer = request.args.get("cacic")
-    trace_id = request.args.get('trace')
+    trace_id = request.args.get('track_id')
     idempotency_key = request.args.get('id_key')
+    required_str = request.args.get("required_fields")
+    required = ast.literal_eval(required_str)
     url = 'https://api.flutterwave.cloud/developersandbox/payment-methods'
     header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
-    print(nonce)
-    print(method)
-    print(trace_id)
-    print(idempotency_key)
-    print(bearer)
-    if method == "Card":
+    print(required)
+    if method == "card":
         data= {
         "type": "card",
         "card": {
-            "encrypted_card_number": "{{$encrypted_card_number}}",
-            "encrypted_expiry_month": "{{$encrypted_expiry_month}}",
-            "encrypted_expiry_year": "{{$encrypted_expiry_year}}",
-            "encrypted_cvv": "{{$encrypted_cvv}}",
-            "nonce": nonce}
+            "encrypted_card_number": required["cc_number"],
+            "encrypted_expiry_month": required["expiration_month"],
+            "encrypted_expiry_year": required["expiration_year"],
+            "encrypted_cvv": required["cvv"],
+            "nonce": required["nonce"]}
         }
         response = requests.post(url=url, headers=header, json=data)
+        return jsonify(response.json())
 
     elif method == "mobileMoney":
         data= {
             "type": "mobile_money",
             "mobile_money": {
-                "country_code": country_code,
-                "network": network,
-                "phone_number": phone_number
+                "country_code": required["mobile_code"],
+                "network": required["network"],
+                "phone_number": required["mobile_number"]
             }
             }
         response = requests.post(url=url, headers=header, json=data)
-
-    elif method == "Opay":
+        return jsonify(response.json())
+    elif method == "opay":
         data = {"type": "opay"}
         response = requests.post(url=url, headers=header, json=data)
+        return jsonify(response.json())
     elif method == "googlePay":
         data = {"type":"googlepay",
                 "googlepay":{
-                    "card_holder_name":"John Doe"
+                    "card_holder_name": required["holder"]
                 }
                 }
         response = requests.post(url=url, headers=header, json=data)
+        return jsonify(response.json())
     else:
         return jsonify({400 :{"Message": "Invalid Request"}})
-    return render_template("payment.html")
-
 
 
 @app.route("/delete/<int:post_id>")
