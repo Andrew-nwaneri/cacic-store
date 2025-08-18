@@ -9,14 +9,14 @@ class RegisterForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     confirm = PasswordField("Confirm password", validators=[DataRequired()])
-    submit = SubmitField("Register", render_kw={"class": "btn btn-secondary"})
+    submit = SubmitField("Register", render_kw={"class": "btn btn-light"})
 
 
 # Create a form to login existing users
 class LoginForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
-    submit = SubmitField("Login", render_kw={"class": "btn btn-secondary"})
+    submit = SubmitField("Login", render_kw={"class": "btn btn-light"})
 
 
 # Create a form to add comments
@@ -82,25 +82,11 @@ class Cred(FlaskForm):
     post_code = StringField("Postal code", validators=[DataRequired()])
     submit = SubmitField("Continue Checkout")
 
-    credential_data = {
-    "address": {
-        "city": "Gotham",
-        "country": "US",
-        "line1": "221B Baker Street",
-        "line2": "b",
-        "postal_code": "94105",
-        "state": "Colorado"
-    },
-    "name": {
-        "first": "King",
-        "middle": "Leo",
-        "last": "James"
-    },
-    "phone": {
-        "country_code": "1",
-        "number": "6313958745"
-    },
-    "email": "james@example.com"}
+class GooglePay(FlaskForm):
+    country_code = IntegerField("Country Code", validators=[DataRequired()])
+    network = SelectField("Mobile network", choices=[("MTN", "MTN") , ("GLO", "GLO"), ("AIRTEL", "AIRTEL"), ("ETISALAT", "ETISALAT")], validators=[DataRequired()])
+    phone_number = IntegerField("Phone number", validators=[DataRequired()])
+    submit = SubmitField("Submit")
 #     <meta charset="UTF-8">
 #     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 #     <title>CACIC SYNERGY</title>

@@ -28,14 +28,10 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 application = app
 
-
 @login_manager.user_loader
 def load_user(user_id):
     return db.get_or_404(User, user_id)
 
-countries = {
-
-}
 
 class AESEncryptor:
     def __init__(self, encryption_key: str):
@@ -321,8 +317,21 @@ def add_new_item():
 def landing():
     return render_template("landing.html")
 
-@app.route('/cart')
+# @app.route('/cart')
+# def cart():
+#         return render_template("cart.html")
+
+@app.route("/checkout", methods=["GET", "POST"])
 def cart():
+    cart_count = 0
+    total = 0
+    current_user_cart = 0
+    trace_id = str(uuid.uuid4())
+    idempotency_key = str(uuid.uuid4())
+    access_token = token()
+    bearer = f'Bearer {access_token}'
+    url = "https://api.flutterwave.cloud/developersandbox/customers"
+
     if not current_user.is_authenticated:
         flash("You need to login or register to add items to your cart.")
         return redirect(url_for("landing"))
@@ -334,18 +343,6 @@ def cart():
             price = items.amount * items.product.price
             prices.append(price)
         total = sum(prices)
-        return render_template("cart.html", cart=current_user_cart, cart_count=cart_count, total=clean(total))
-
-@app.route("/checkout", methods=["GET", "POST"])
-def checkout():
-    cart_count = len(current_user.cart)
-    trace_id = str(uuid.uuid4())
-    idempotency_key = str(uuid.uuid4())
-    access_token = token()
-    bearer = f'Bearer {access_token}'
-    data = {'page': 1, 'size': 10}
-    url = "https://api.flutterwave.cloud/developersandbox/customers"
-    headers = {'Authorization': bearer, "X-Trace-Id": trace_id}
 
     if request.method == "POST":
         first_name = request.form.get("firstName")
@@ -386,7 +383,6 @@ def checkout():
             search_response = requests.post(search_url, headers=search_headers, json=search_data)
             if not search_response.json()['data']:
                 credential_header = {'Authorization' : bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
-                credential_data = None
                 if middle_name and address2:
                     credential_data = {
                     "address": {
@@ -476,13 +472,8 @@ def checkout():
         except Exception as e:
             print(e)
             return jsonify({"STATUS": "Failed"})
-    return render_template("processing.html", cart_count=cart_count)
+    return render_template("processing.html", cart=current_user_cart, cart_count=cart_count, total=clean(total))
 
-@app.route("/payment-method")
-def payment_method():
-    bearer = request.args.get("cacic")
-    print(bearer)
-    return render_template("payment-method.html", cacic=bearer)
 
 @app.route("/payment", methods=["GET", "POST"])
 def pay():
@@ -493,7 +484,6 @@ def pay():
     idempotency_key = request.args.get('id_key')
     url = 'https://api.flutterwave.cloud/developersandbox/payment-methods'
     header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
-
     print(nonce)
     print(method)
     print(trace_id)
