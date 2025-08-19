@@ -1,4 +1,3 @@
-import random
 import ast
 from flask import Flask, abort, render_template, redirect, url_for, flash, request, jsonify
 from flask_bootstrap import Bootstrap5
@@ -322,6 +321,7 @@ def landing():
 
 @app.route("/checkout", methods=["GET", "POST"])
 def cart():
+    transaction_reference = str(uuid.uuid4())
     trace_id = str(uuid.uuid4())
     idempotency_key = str(uuid.uuid4())
     access_token = token()
@@ -375,7 +375,8 @@ def cart():
                 "City": city,
                 "Country Code": country_code,
                 "Payment Option": payment_option,
-                "nonce": nonce
+                "nonce": nonce,
+                "transaction_reference": transaction_reference
             }
 
         elif payment_option == "card":
@@ -401,7 +402,8 @@ def cart():
                 "expiration_month": expiration_month,
                 "expiration_year": expiration_year,
                 "cc_number": cc_number,
-                "nonce": nonce
+                "nonce": nonce,
+                "transaction_reference": transaction_reference
             }
 
         elif payment_option == "googlePay":
@@ -419,7 +421,8 @@ def cart():
                 "Country Code": country_code,
                 "Payment Option": payment_option,
                 "holder": holder,
-                "nonce": nonce
+                "nonce": nonce,
+                "transaction_reference": transaction_reference
             }
 
         else:
@@ -441,11 +444,11 @@ def cart():
                 "mobile_code": mobile_code,
                 "network": network,
                 "mobile": mobile,
-                "nonce": nonce
+                "nonce": nonce,
+                "transaction_reference": transaction_reference
             }
         for field_name, value in required_fields.items():
             if not value:
-                print(required_fields)
                 flash(f"{field_name} is a required field.")
                 return render_template("processing.html", cart_count=cart_count)
 
@@ -559,17 +562,33 @@ def cart():
 
 @app.route("/payment", methods=["GET", "POST"])
 def pay():
-    transaction_reference = str(uuid.uuid4())
-    print(transaction_reference)
+    prices = []
+    current_user_cart = db.session.execute(db.select(Cart).where(Cart.user_id == current_user.id)).scalars().all()
+    for items in current_user_cart:
+        price = items.amount * items.product.price
+        prices.append(price)
+    total = sum(prices)
     method = request.args.get("payment_option")
     bearer = request.args.get("cacic")
     trace_id = request.args.get('track_id')
     idempotency_key = request.args.get('id_key')
     required_str = request.args.get("required_fields")
     required = ast.literal_eval(required_str)
+    print(required)
     url = 'https://api.flutterwave.cloud/developersandbox/payment-methods'
     header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
-    print(required)
+    try:
+        search_url = 'https://api.flutterwave.cloud/developersandbox/customers/search'
+        search_data = {'page': 1, 'size': 10, 'email': current_user.email}
+        search_headers = {'Authorization': bearer, "X-Trace-Id": trace_id}
+        search_response = requests.post(search_url, headers=search_headers, json=search_data)
+        customer_id = search_response.json()['data'][0]['id']
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'{e}'
+        }), 500
+
     if method == "card":
         data= {
         "type": "card",
@@ -581,7 +600,62 @@ def pay():
             "nonce": required["nonce"]}
         }
         response = requests.post(url=url, headers=header, json=data)
-        return jsonify(response.json())
+        if response.json()["status"] == "success":
+            charge_url = 'https://api.flutterwave.cloud/developersandbox/charges'
+            charge_header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
+            charge_data ={
+            "reference": required["transaction_reference"],
+            "currency": "NGN",
+            "customer_id": customer_id,
+            "payment_method_id": response.json()["data"]["id"],
+            "redirect_url": "https://google.com",
+            "amount": total,
+            "meta": {
+                "person_name": f'{required["First Name"]} {required["Last Name"]}',
+                "role": "Developer"
+                        }
+                    }
+            charge_response = requests.post(charge_url, headers=charge_header, json=charge_data)
+
+            if charge_response.json()["data"]["next_action"]["type"] == "requires_otp":
+                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
+                payload = {
+                                "authorization": {
+                                    "type": "otp",
+                                    "otp": {
+                                        "code": "123456"
+                                    }
+                                }
+                            }
+                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+                response = requests.put(url, json=payload, headers=headers)
+                return jsonify(response.json())
+
+            elif charge_response.json()["data"]["next_action"]["type"] == "requires_pin":
+                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
+                payload = {
+                                "authorization": {
+                                    "type": "pin",
+                                    "pin": {
+                                            "nonce": "w2zQDGCf1QXA",
+                                            "encrypted_pin": "LC8FYIrkmK6oMULiBskRx9L3"
+                                                                                        }
+                                                                                    }
+                            }
+                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+                response = requests.put(url, json=payload, headers=headers)
+                return jsonify(response.json())
+
+            elif charge_response.json()["data"]["next_action"]["type"] == "redirect_url":
+                return redirect(url_for(charge_response.json()["data"]["next_action"]["redirect_url"]["url"]))
+
+            else:
+                return jsonify({
+                    'success': False,
+                    "message": charge_response.json()["data"]["next_action"]
+                }), 500
+        else:
+            return jsonify(response.json())
 
     elif method == "mobileMoney":
         data= {
@@ -589,23 +663,185 @@ def pay():
             "mobile_money": {
                 "country_code": required["mobile_code"],
                 "network": required["network"],
-                "phone_number": required["mobile_number"]
+                "phone_number": required["mobile"]
             }
             }
         response = requests.post(url=url, headers=header, json=data)
-        return jsonify(response.json())
+        if response.json()["status"] == "success":
+            charge_url = 'https://api.flutterwave.cloud/developersandbox/charges'
+            charge_header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
+            charge_data ={
+            "reference": required["transaction_reference"],
+            "currency": "NGN",
+            "customer_id": customer_id,
+            "payment_method_id": response.json()["data"]["id"],
+            "redirect_url": "https://google.com",
+            "amount": total,
+            "meta": {
+                "person_name": f'{required["First Name"]} {required["Last Name"]}',
+                "role": "Developer"
+            }
+        }
+            charge_response = requests.post(charge_url, headers=charge_header, json=charge_data)
+            if charge_response.json()["data"]["next_action"]["type"] == "requires_otp":
+                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
+                payload = {
+                    "authorization": {
+                        "type": "otp",
+                        "otp": {
+                            "code": "123456"
+                        }
+                    }
+                }
+                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+                response = requests.put(url, json=payload, headers=headers)
+                return jsonify(response.json())
+
+            elif charge_response.json()["data"]["next_action"]["type"] == "requires_pin":
+                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
+                payload = {
+                    "authorization": {
+                        "type": "pin",
+                        "pin": {
+                            "nonce": "w2zQDGCf1QXA",
+                            "encrypted_pin": "LC8FYIrkmK6oMULiBskRx9L3"
+                        }
+                    }
+                }
+                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+                response = requests.put(url, json=payload, headers=headers)
+                return jsonify(response.json())
+
+            elif charge_response.json()["data"]["next_action"]["type"] == "redirect_url":
+                return redirect(url_for(charge_response.json()["data"]["next_action"]["redirect_url"]["url"]))
+
+            else:
+                return jsonify({
+                    'success': False,
+                    "message": charge_response.json()["data"]["next_action"]
+                }), 500
+        else:
+            return jsonify(response.json())
     elif method == "opay":
         data = {"type": "opay"}
         response = requests.post(url=url, headers=header, json=data)
-        return jsonify(response.json())
+        if response.json()["status"] == "success":
+            charge_url = 'https://api.flutterwave.cloud/developersandbox/charges'
+            charge_header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
+            charge_data = {
+            "reference": required["transaction_reference"],
+            "currency": "NGN",
+            "customer_id": customer_id,
+            "payment_method_id": response.json()["data"]["id"],
+            "redirect_url": "https://google.com",
+            "amount": total,
+            "meta": {"person_name": f'{required["First Name"]} {required["Last Name"]}', "role": "Developer"}
+            }
+            print(charge_data)
+            charge_response = requests.post(charge_url, headers=charge_header, json=charge_data)
+            if charge_response.json()["data"]["next_action"]["type"] == "requires_otp":
+                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
+                payload = {
+                    "authorization": {
+                        "type": "otp",
+                        "otp": {
+                            "code": "123456"
+                        }
+                    }
+                }
+                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+                response = requests.put(url, json=payload, headers=headers)
+                return jsonify(response.json())
+
+            elif charge_response.json()["data"]["next_action"]["type"] == "requires_pin":
+                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
+                payload = {
+                    "authorization": {
+                        "type": "pin",
+                        "pin": {
+                            "nonce": "w2zQDGCf1QXA",
+                            "encrypted_pin": "LC8FYIrkmK6oMULiBskRx9L3"
+                        }
+                    }
+                }
+                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+                response = requests.put(url, json=payload, headers=headers)
+                return jsonify(response.json())
+
+            elif charge_response.json()["data"]["next_action"]["type"] == "redirect_url":
+                pay_rdr = charge_response.json()["data"]["next_action"]["redirect_url"]["url"]
+                print(pay_rdr)
+                return redirect(pay_rdr)
+
+            else:
+                return jsonify({
+                    'success': False,
+                    "message": charge_response.json()["data"]["next_action"]
+                }), 500
+        else:
+            return jsonify(response.json())
     elif method == "googlePay":
         data = {"type":"googlepay",
                 "googlepay":{
                     "card_holder_name": required["holder"]
-                }
+                            }
                 }
         response = requests.post(url=url, headers=header, json=data)
-        return jsonify(response.json())
+        if response.json()["status"] == "success":
+            charge_url = 'https://api.flutterwave.cloud/developersandbox/charges'
+            charge_header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
+            charge_data ={
+            "reference": required["transaction_reference"],
+            "currency": "NGN",
+            "customer_id": customer_id,
+            "payment_method_id": response.json()["data"]["id"],
+            "redirect_url": "https://google.com",
+            "amount": total,
+            "meta": {
+                "person_name": f'{required["First Name"]} {required["Last Name"]}',
+                "role": "Developer"
+            }
+        }
+            charge_response = requests.post(charge_url, headers=charge_header, json=charge_data)
+            if charge_response.json()["data"]["next_action"]["type"] == "requires_otp":
+                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
+                payload = {
+                    "authorization": {
+                        "type": "otp",
+                        "otp": {
+                            "code": "123456"
+                        }
+                    }
+                }
+                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+                response = requests.put(url, json=payload, headers=headers)
+                return jsonify(response.json())
+
+            elif charge_response.json()["data"]["next_action"]["type"] == "requires_pin":
+                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
+                payload = {
+                    "authorization": {
+                        "type": "pin",
+                        "pin": {
+                            "nonce": "w2zQDGCf1QXA",
+                            "encrypted_pin": "LC8FYIrkmK6oMULiBskRx9L3"
+                        }
+                    }
+                }
+                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+                response = requests.put(url, json=payload, headers=headers)
+                return jsonify(response.json())
+
+            elif charge_response.json()["data"]["next_action"]["type"] == "redirect_url":
+                return redirect(url_for(charge_response.json()["data"]["next_action"]["redirect_url"]["url"]))
+
+            else:
+                return jsonify({
+                    'success': False,
+                    "message": charge_response.json()["data"]["next_action"]
+                }), 500
+        else:
+            return jsonify(response.json())
     else:
         return jsonify({400 :{"Message": "Invalid Request"}})
 
