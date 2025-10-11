@@ -1,0 +1,30 @@
+{% from "bootstrap5/form.html" import render_form %}
+{% block content %}
+{% include "header.html" %}
+
+<style>
+  body{
+  margin-bottom: 2;
+  }
+        .flash {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+</style>
+<body>
+{% if method == "requires_otp" %}
+<h1>An OTP has been sent to your contact!</h1>
+{% elif method == "requires_pin"%}
+<h1>Enter Your ATM pin</h1>
+{% endif %}
+        {{ render_form(form, novalidate=True, button_map={"submit": "light"}) }}
+
+ {{ bootstrap.load_js() }}
+
+{% include "footer.html" %}
+</body>
+{% endblock %}

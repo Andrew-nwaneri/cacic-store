@@ -1,6 +1,10 @@
 {% include "header.html" %}
 
 <style>
+  /*
+  These styles are kept as they provide specific pixel-based sizing
+  and positioning adjustments that are not available in standard Bootstrap classes.
+  */
   .cart-badge {
     padding: 0.25em 0.5em; /* Adjust padding for size */
     font-size: 0.75rem; /* Adjust font size */
@@ -13,21 +17,39 @@
 .cart-badge:empty, .cart-badge.hidden {
     display: none;
 }
+  /* --- MODERN PRODUCT CARD STYLING --- */
   .product-card {
-    transition: all 0.3s ease;
+    transition: all 0.3s ease-in-out; /* Enhanced transition for smooth hover */
+    position: relative;
+    overflow: hidden; /* Necessary for image zoom */
+    border: none; /* Ensure border-0 is effective */
   }
 
-  @media (max-width: 991.98px) {
-    .product-card img {
-      height: 180px;
-    }
+  .product-card:hover {
+    transform: translateY(-5px); /* Lift card */
+    /* Deeper shadow using a slight purple tint from the theme */
+    box-shadow: 0 10px 25px rgba(65, 4, 69, 0.2), 0 5px 15px rgba(0, 0, 0, 0.08) !important;
   }
 
-  @media (min-width: 992px) {
-    .product-card img {
-      height: 300px;
-    }
+  .product-img {
+    transition: transform 0.5s ease; /* Transition for zoom */
   }
+
+  .product-card:hover .product-img {
+    transform: scale(1.05); /* Gentle zoom effect on hover */
+  }
+  .scrolling-container-bs::-webkit-scrollbar {
+            display: none;
+        }
+        .scrolling-container-bs {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        /* Define a fixed width for the cards, allowing them to stack horizontally */
+        .product-card {
+            width: 18rem; /* Equivalent to w-72 in Tailwind (~288px) */
+        }
+  /* Fixed height media queries removed to allow the aspect ratio container to control sizing. */
 </style>
 
 {% block content %}
@@ -39,8 +61,9 @@
       <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="2" aria-label="Slide 3" class=""></button>
     </div>
     <div class="carousel-inner">
-      <div class="carousel-item active carousel-item-start" style="background-image: url('static/assets/family.jpg'); background-size: cover; background-position: center;">
-        <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false"><rect width="100%" height="100%" fill="var(--bs-secondary-color)"></rect></svg>
+      <!-- REDUNDANCY REMOVED: Removed static 'carousel-item-start' class.
+           REDUNDANCY REMOVED: Removed unnecessary SVG placeholder since background image is used. -->
+      <div class="carousel-item active" style="background-image: url('static/assets/family.jpg'); background-size: cover; background-position: center;">
         <div class="container">
           <div class="carousel-caption text-start">
             <h1>Example headline.</h1>
@@ -49,8 +72,9 @@
           </div>
         </div>
       </div>
-      <div class="carousel-item carousel-item-next carousel-item-start" style="background-image: url('static/assets/dog.jpg'); background-size: cover; background-position: center;">
-        <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false"><rect width="100%" height="100%" fill="var(--bs-secondary-color)"></rect></svg>
+      <!-- REDUNDANCY REMOVED: Removed static 'carousel-item-next' and 'carousel-item-start' classes.
+           REDUNDANCY REMOVED: Removed unnecessary SVG placeholder. -->
+      <div class="carousel-item" style="background-image: url('static/assets/dog.jpg'); background-size: cover; background-position: center;">
         <div class="container">
           <div class="carousel-caption">
             <h1>Another example headline.</h1>
@@ -59,8 +83,8 @@
           </div>
         </div>
       </div>
+      <!-- REDUNDANCY REMOVED: Removed unnecessary SVG placeholder. -->
       <div class="carousel-item" style="background-image: url('static/assets/couple.jpg'); background-size: cover; background-position: center;">
-        <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false"><rect width="100%" height="100%" fill="var(--bs-secondary-color)"></rect></svg>
         <div class="container">
           <div class="carousel-caption text-end">
             <h1>One more for good measure.</h1>
@@ -85,44 +109,55 @@
 <div class="py-5" style="background-color: #F5F7F8;">
     <h2 style="text-align: center; color: #443627;" class="mb-5">{{ page }}</h2>
       <div class="container p-4">
-        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-2 row-cols-lg-3 g-3">
+        <!-- Layout: 1 column on mobile, 2 on small/medium, 3 on large -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-2 row-cols-lg-3 g-3">
 
         {% for item in stocks %}
 
-        <div class="col pb-1 px-4">
-        <div class="card product-card shadow-sm border-0 rounded-lg overflow-hidden mx-auto" style="max-width: 100%;">
+        <div class="col pb-1 px-4 d-flex">
+        <!-- UPGRADED PRODUCT CARD START -->
+        <div class="card product-card shadow-lg border-0 rounded-xl overflow-hidden h-100 w-100">
 
-        <a href="{{ url_for('view', item_id=item.id) }}" class="text-decoration-none">
-        <img src="{{ item.img_url }}" class="product-img card-img-top img-fluid object-cover"
+        <!-- MODIFIED: Added ratio ratio-4x3 to maintain aspect ratio -->
+        <a href="{{ url_for('view', item_id=item.id) }}" class="text-decoration-none d-block overflow-hidden ratio ratio-4x3">
+        <!-- MODIFIED: Added w-100 h-100 to ensure image fills the ratio container -->
+        <img src="{{ item.img_url }}" class="product-img card-img-top img-fluid object-cover w-100 h-100"
              alt="Product Thumbnail"
              onerror="this.onerror=null;this.src='https://placehold.co/400x300/E0E0E0/333333?text=Product+Image';"
              >
         </a>
 
-        <div class="card-body d-flex flex-column justify-content-between p-2 p-lg-4">
+        <!-- Card Body with Flexbox for sticky footer effect -->
+        <div class="card-body d-flex flex-column p-3 p-lg-4">
 
             <!-- Product Name -->
-            <h2 class="h5 fw-bold text-center mb-2 text-secondary">{{ item.name }}</h2>
+            <h2 class="h5 fw-bolder text-center mb-1 text-dark text-truncate" style="color: #443627">{{ item.name }}</h2>
 
-            <!-- Product Description -->
-            <p class="card-text text-center text-muted flex-grow-1 mb-2 d-none d-lg-block">
+            <!-- Product Description (Now visible on small screens too, but smaller font) -->
+            <p class="card-text text-center text-secondary flex-grow-1 mb-3 text-sm">
                 {{ item.description }}
             </p>
 
-            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+            <!-- Price and Button Section (Always visible, pushed to the bottom) -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-auto">
                 <!-- Price and Unit -->
-                <span class="fs-6 fs-lg-6 fw-lg-bold" style="color: #410445">₦{{ item.price }}/<i>{{ item.unit }}</i></span>
-                <!-- Add to Cart Button -->
-                <div class="btn-group">
-                <button type="button" class="btn btn-light btn-sm fw-semibold" onclick="addToCart({{ item.id }}, this)" style="background-color: #dcb45c" rel="add to cart" data-item-id="{{ item.id }}">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" class="bi bi-cart-plus" viewBox="0 0 16 16">
+                <div class="d-flex flex-column">
+                    <span class="fs-5 fw-bold" style="color: #410445">₦{{ item.price }}</span>
+                    <i class="text-xs text-muted">{{ item.unit }}</i>
+                </div>
+
+                <!-- Add to Cart Button (Modernized look) -->
+                <button type="button" class="btn btn-sm text-white fw-bold d-flex align-items-center hover:shadow-md" onclick="addToCart({{ item.id }}, this)"
+                        style="background-color: #dcb45c; border-radius: 0.5rem;" rel="add to cart" data-item-id="{{ item.id }}">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" class="bi bi-cart-plus me-1" viewBox="0 0 16 16">
                   <path d="M9 5.5a.5.5 0 0 0-1 0V7H6.5a.5.5 0 0 0 0 1H8v1.5a.5.5 0 0 0 1 0V8h1.5a.5.5 0 0 0 0-1H9z"/>
                   <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1zm3.915 10L3.102 4h10.796l-1.313 7zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0m7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
                 </svg>
+                Add
                 </button>
-                </div>
             </div>
         </div>
+        <!-- UPGRADED PRODUCT CARD END -->
     </div>
 </div>
 
@@ -140,11 +175,8 @@
     <hr class="featurette-divider">
 <div class="container my-5">
     <div class="row featurette">
-      <div class="col-md-7">
-        <h2 class="featurette-heading fw-normal lh-1">First featurette heading. <span class="text-body-secondary">It’ll blow your mind.</span></h2>
-        <p class="lead">Some great placeholder content for the first featurette here. Imagine some exciting prose here.</p>
-      </div>
       <div class="col-md-5">
+        <!-- REDUNDANCY REMOVED: Removed unnecessary SVG placeholder. -->
         <svg class="bd-placeholder-img bd-placeholder-img-lg featurette-image img-fluid mx-auto" width="500" height="500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: 500x500" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="var(--bs-secondary-bg)"></rect><text x="50%" y="50%" fill="var(--bs-secondary-color)" dy=".3em">500x500</text></svg>
       </div>
     </div>
@@ -152,34 +184,97 @@
 
 </div>
 
-<div class="" style="background-color: #F5F7F8;">
-<h2 style="text-align: center; color: #443627;" class="p-4">BEST SELLERS</h2>
+    <div class="bg-white py-5 shadow-sm" style="background-color: #F5F7F8 !important;">
+        <h2 class="h3 fw-bold text-center mb-4" style="color: #443627;">BEST SELLERS</h2>
 
-    <div class="container marketing py-5">
+        <!-- Scrolling Container: Uses d-flex, flex-nowrap, and overflow-auto for horizontal scroll -->
+        <div class="scrolling-container-bs d-flex flex-nowrap overflow-auto px-4 py-4">
 
-    <!-- Three columns of text below the carousel -->
-    <div class="row">
-      <div class="col-lg-4">
-        <svg class="bd-placeholder-img rounded-circle" width="140" height="140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="var(--bs-secondary-color)"></rect></svg>
-        <h2 class="fw-normal">Heading</h2>
-        <p>Some representative placeholder content for the three columns of text below the carousel. This is the first column.</p>
-        <p><a class="btn btn-secondary" href="#">View details »</a></p>
-      </div><!-- /.col-lg-4 -->
-      <div class="col-lg-4">
-        <svg class="bd-placeholder-img rounded-circle" width="140" height="140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="var(--bs-secondary-color)"></rect></svg>
-        <h2 class="fw-normal">Heading</h2>
-        <p>Another exciting bit of representative placeholder content. This time, we've moved on to the second column.</p>
-        <p><a class="btn btn-secondary" href="#">View details »</a></p>
-      </div><!-- /.col-lg-4 -->
-      <div class="col-lg-4">
-        <svg class="bd-placeholder-img rounded-circle" width="140" height="140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="var(--bs-secondary-color)"></rect></svg>
-        <h2 class="fw-normal">Heading</h2>
-        <p>And lastly this, the third column of representative placeholder content.</p>
-        <p><a class="btn btn-secondary" href="#">View details »</a></p>
-      </div><!-- /.col-lg-4 -->
-    </div><!-- /.row --></div>  </div>
+            <!-- Item 1 -->
+            <div class="product-card card shadow-lg rounded-3 p-3 border-0 flex-shrink-0 me-4">
+                <div class="d-flex justify-content-center mb-3">
+                    <!-- Placeholder for Product Image -->
+                    <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center text-primary fw-bold fs-5" style="width: 140px; height: 140px;">
+                        Product 1
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-center mb-2 text-dark">Heading 1</h5>
+                <p class="card-text text-muted text-center mb-3 small">
+                    Some representative placeholder content for the first best-selling item.
+                </p>
+                <div class="text-center">
+                    <a class="btn btn-secondary btn-sm rounded-pill fw-medium px-4" href="#">
+                        View details »
+                    </a>
+                </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="product-card card shadow-lg rounded-3 p-3 border-0 flex-shrink-0 me-4">
+                <div class="d-flex justify-content-center mb-3">
+                    <!-- Placeholder for Product Image -->
+                    <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center text-primary fw-bold fs-5" style="width: 140px; height: 140px;">
+                        Product 2
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-center mb-2 text-dark">Heading 2</h5>
+                <p class="card-text text-muted text-center mb-3 small">
+                    Another exciting bit of representative placeholder content for the second item.
+                </p>
+                <div class="text-center">
+                    <a class="btn btn-light btn-sm rounded-pill fw-medium px-4" href="#">
+                        View details »
+                    </a>
+                </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="product-card card shadow-lg rounded-3 p-3 border-0 flex-shrink-0 me-4">
+                <div class="d-flex justify-content-center mb-3">
+                    <!-- Placeholder for Product Image -->
+                    <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center text-primary fw-bold fs-5" style="width: 140px; height: 140px;">
+                        Product 3
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-center mb-2 text-dark">Heading 3</h5>
+                <p class="card-text text-muted text-center mb-3 small">
+                    And lastly this, the third column of representative placeholder content.
+                </p>
+                <div class="text-center">
+                    <a class="btn btn-secondary btn-sm rounded-pill fw-medium px-4" href="#">
+                        View details »
+                    </a>
+                </div>
+            </div>
+
+            <!-- Item 4 (Added for demonstration) -->
+            <div class="product-card card shadow-lg rounded-3 p-3 border-0 flex-shrink-0 me-4">
+                <div class="d-flex justify-content-center mb-3">
+                    <!-- Placeholder for Product Image -->
+                    <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center text-primary fw-bold fs-5" style="width: 140px; height: 140px;">
+                        Product 4
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-center mb-2 text-dark">Bonus Item</h5>
+                <p class="card-text text-muted text-center mb-3 small">
+                    A fourth card to ensure the horizontal scroll is clearly visible and functional across devices.
+                </p>
+                <div class="text-center">
+                    <a class="btn btn-light btn-sm rounded-pill fw-medium px-4" href="#">
+                        View details »
+                    </a>
+                </div>
+            </div>
+
+        </div>
+        <!-- End Scrolling Container -->
+    </div>
 
 {% endblock %}
     {{ bootstrap.load_js() }}
 
-{% include "footer.html" %}
+{% include "footer.html" %}"

@@ -88,6 +88,13 @@ class GooglePay(FlaskForm):
     phone_number = IntegerField("Phone number", validators=[DataRequired()])
     submit = SubmitField("Submit")
 
+class Pin(FlaskForm):
+    pin = PasswordField("PIN", validators=[DataRequired()])
+    submit = SubmitField("Submit")
+
+class AuthForm(FlaskForm):
+    auth = StringField("Enter OTP", validators=[DataRequired()])
+    submit = SubmitField("Submit")
 # elif charge_response.json()["data"]["next_action"]["type"] == "requires_additional_fields":
 # url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
 # payload = {

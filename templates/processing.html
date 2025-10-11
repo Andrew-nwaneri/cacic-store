@@ -31,6 +31,18 @@
             object-fit: cover;
         }
 
+        /* --- NEW: Card styling for the form container on mobile screens --- */
+        @media (max-width: 767.98px) { /* Targets screens smaller than Bootstrap's 'md' breakpoint */
+            .mobile-card-form {
+                background-color: #fff;
+                border: 1px solid rgba(0, 0, 0, 0.125);
+                border-radius: 0.75rem; /* Slightly more rounded corners */
+                padding: 2.5rem; /* Add internal padding */
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Soft shadow */
+                margin-top: 1.5rem; /* Space it from the cart summary */
+            }
+        }
+
 </style>
 
 <div class="container my-4">
@@ -69,7 +81,9 @@
                 <li class="list-group-item d-flex justify-content-between"> <span>Total (NGN)</span> <strong>{{ total }}</strong> </li>
         </ul>
         <form class="card p-2"> <div class="input-group"> <input type="text" class="form-control" placeholder="Promo code"> <button type="submit" class="btn btn-secondary">Redeem</button> </div> </form> </div>
-<div class="col-md-7 col-lg-8">
+<!-- MODIFIED: Added the mobile-card-form class here -->
+        <div class="min-h-screen flex items-center justify-center p-4">
+<div class="col-md-7 col-lg-8 mobile-card-form">
     <h5 class="mb-3">Billing address</h5>
     {% with messages = get_flashed_messages() %}
       {% if messages %}
@@ -139,7 +153,7 @@ Postal code required.
 <div id="googlePay-form" style="display:none;">
     <div class="mb-3">
         <label for="googlePay-card-holder">Card Holder Name</label>
-        <input type="text" class="form-control" id="googlePay-card-holder">
+        <input type="text" class="form-control" id="googlePay-card-holder" name="googlePay-card-holder">
     </div>
 </div>
 
@@ -201,6 +215,6 @@ Please select your network.
     // Initial call to show the default form on page load
     showForm('card-form');
 </script>
-<script src="/docs/5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" class="astro-vvvwv3sm"></script>
+<script src="/docs/5.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" class="astro-vvvwv3sm"></script>
 <script src="checkout.js" class="astro-vvvwv3sm"></script>
 {% endblock %}

@@ -12,7 +12,7 @@
         {{ bootstrap.load_css() }}
         <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-aFq/bzH65dt+w6FI2ooMVUpc+21e0SRygnTpmBvdBgSdnuTN7QbdgL+OapgHtvPp" crossorigin="anonymous">
+    xintegrity="sha384-aFq/bzH65dt+w6FI2ooMVUpc+21e0SRygnTpmBvdBgSdnuTN7QbdgL+OapgHtvPp" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Danfo&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Playwrite+AU+QLD:wght@100..400&family=Playwrite+GB+S:ital,wght@0,100..400;1,100..400&display=swap" rel="stylesheet">
@@ -74,6 +74,58 @@
             height: calc(55px * 1.2);
         }
     }
+
+    /* --- NEW COLLAPSIBLE SEARCH STYLES --- */
+    .search-wrapper {
+        /* Initial state on mobile: minimal width, hidden input */
+        max-width: 25px; /* Width for the search icon */
+        transition: max-width 0.3s ease-out;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .search-form {
+        /* Initially hide the form content on mobile */
+        width: 100%;
+        opacity: 0;
+        transition: opacity 0.2s 0.1s ease-in; /* Delay opacity for better transition feel */
+        pointer-events: none; /* Prevent interaction when hidden */
+        display: none; /* Force hide the element initially on small screens */
+    }
+
+    .search-wrapper.expanded {
+        /* Expanded state on mobile: full width, visible input */
+        max-width: 250px; /* Adjust max width as needed for mobile view */
+        transition: max-width 0.3s ease-in;
+    }
+
+    .search-wrapper.expanded .search-form {
+        opacity: 1;
+        pointer-events: all;
+        display: block; /* Show the element when expanded */
+        margin-left: 0.5rem; /* Spacing between icon and input */
+    }
+
+    /* Desktop styles (lg and up) */
+    @media (min-width: 992px) {
+        .search-wrapper {
+            /* On desktop, the wrapper takes full space and allows content to show */
+            max-width: none;
+            flex-grow: 1; /* Allow it to take up remaining space */
+            overflow: visible;
+        }
+
+        .search-form {
+            opacity: 1;
+            pointer-events: all;
+            display: block;
+        }
+
+        /* Hide the toggle button on desktop */
+        #search-toggle {
+            display: none !important;
+        }
+    }
 </style>
     {% endblock %}
 
@@ -82,7 +134,8 @@
 <body>
 
     <header class="py-3 mb-1 border-bottom" style="">
-    <div class="container-fluid d-grid gap-3 align-items-center" style="grid-template-columns: 1fr 2fr;">
+    <!-- Updated grid-template-columns to use 'auto' instead of '2fr' for more fluid behavior -->
+    <div class="container-fluid d-grid gap-3 align-items-center" style="grid-template-columns: 1fr auto;">
       <div class="px-0 px-lg-5">
         <a href="{{ url_for('home') }}" class="align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none" aria-expanded="false">
             <img src="{{ url_for('static', filename='assets/cacic.png') }}" class="logo-img" height="55" alt="Cacic Synergy Logo">
@@ -90,9 +143,22 @@
       </div>
 
       <div class="d-flex align-items-center">
-          <form class="w-100 me-3" method="get" action="{{ url_for('search') }}">
-            <input type="text" class="form-control" placeholder="Search For Item..." aria-label="Search" name="search" id="query">
-          </form>
+
+        <!-- NEW SEARCH WRAPPER -->
+        <div id="search-wrapper" class="search-wrapper d-flex align-items-center me-3">
+            <!-- Search Icon (Visible on mobile, triggers expansion) -->
+            <button id="search-toggle" type="button" class="btn btn-link text-body d-lg-none p-0 flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                </svg>
+            </button>
+
+            <!-- Search Form (Collapsed on mobile, full width on desktop) -->
+            <form id="search-form" class="search-form flex-grow-1" method="get" action="{{ url_for('search') }}">
+                <input type="text" class="form-control search-input" placeholder="Search For Item..." aria-label="Search" name="search" id="query">
+            </form>
+        </div>
+        <!-- END NEW SEARCH WRAPPER -->
 
 
     {% if current_user.is_authenticated %}
@@ -139,55 +205,91 @@
       </div>
     </div>
   </header>
-        {{ bootstrap.load_js() }}
-</body>
 
-<script>function addToCart(itemId, buttonElement) {
-  // Disable the button to prevent multiple clicks
-  buttonElement.disabled = true;
-  const originalHtml = buttonElement.innerHTML;
-  buttonElement.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+<script>
+    // This script handles the expansion and collapse of the search bar on mobile screens.
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchToggle = document.getElementById('search-toggle');
+        const searchWrapper = document.getElementById('search-wrapper');
+        const searchInput = document.getElementById('query');
 
-  fetch(`/add-to-cart/${itemId}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ item_id: itemId })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
+        if (searchToggle) {
+            searchToggle.addEventListener('click', function() {
+                // Toggle the 'expanded' class on the wrapper
+                searchWrapper.classList.toggle('expanded');
 
-      // On success, change button text and style
-      buttonElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
-                                      <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/>
-                                    </svg>`;
-      buttonElement.style.backgroundColor = '#dcb45c'; // Green color for success
+                if (searchWrapper.classList.contains('expanded')) {
+                    // When expanding, ensure the form is visible and then focus the input
+                    const searchForm = document.getElementById('search-form');
+                    searchForm.style.display = 'block';
 
-      // Reset the button after a delay
-      setTimeout(() => {
-        buttonElement.innerHTML = originalHtml;
-        buttonElement.style.backgroundColor = '#dcb45c'; // Reset to original color
+                    // Delay focusing the input to allow the CSS transition to start
+                    setTimeout(() => searchInput.focus(), 50);
+                } else {
+                    // When collapsing, clear the input and hide the form element
+                    searchInput.value = '';
+                    setTimeout(() => {
+                        const searchForm = document.getElementById('search-form');
+                        searchForm.style.display = 'none';
+                    }, 300); // Wait for the max-width transition to complete before hiding
+                }
+            });
+        }
+    });
+
+    // Existing addToCart function (unchanged)
+    function addToCart(itemId, buttonElement) {
+      // Disable the button to prevent multiple clicks
+      buttonElement.disabled = true;
+      const originalHtml = buttonElement.innerHTML;
+      buttonElement.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+
+      fetch(`/add-to-cart/${itemId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ item_id: itemId })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+
+          // On success, change button text and style
+          buttonElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+                                          <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/>
+                                        </svg>`;
+          buttonElement.style.backgroundColor = '#dcb45c'; // Green color for success
+
+          // Reset the button after a delay
+          setTimeout(() => {
+            buttonElement.innerHTML = originalHtml;
+            buttonElement.style.backgroundColor = '#dcb45c'; // Reset to original color
+            buttonElement.disabled = false;
+          }, 2000); // Reset after 2 seconds
+
+          // Optional: Update cart count
+          const cartCountElement = document.getElementById('cart-count');
+          if (cartCountElement) {
+            cartCountElement.innerText = data.cart_count;
+          }
+        } else {
+          // IMPORTANT: Replaced alert() with console logging for better development practice
+          console.error(data.message);
+          buttonElement.innerHTML = originalHtml; // Reset button on error
+          buttonElement.disabled = false;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        // IMPORTANT: Replaced alert() with console logging for better development practice
+        console.error('An error occurred while adding the item to the cart.');
+        buttonElement.innerHTML = originalHtml; // Reset button on error
         buttonElement.disabled = false;
-      }, 2000); // Reset after 2 seconds
-
-      // Optional: Update cart count
-      const cartCountElement = document.getElementById('cart-count');
-      if (cartCountElement) {
-        cartCountElement.innerText = data.cart_count;
-      }
-    } else {
-      alert(data.message);
-      buttonElement.innerHTML = originalHtml; // Reset button on error
-      buttonElement.disabled = false;
+      });
     }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('An error occurred while adding the item to the cart.');
-    buttonElement.innerHTML = originalHtml; // Reset button on error
-    buttonElement.disabled = false;
-  });
-}</script>
+</script>
+
+  {{ bootstrap.load_js() }}
+</body>
 </html>

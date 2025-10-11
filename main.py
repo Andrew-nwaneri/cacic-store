@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Text, Float, Boolean
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-from forms import RegisterForm, LoginForm, CommentForm, Add, EditItem
+from forms import RegisterForm, LoginForm, AuthForm, Pin, Add, EditItem
 import requests
 import base64
 import secrets
@@ -244,11 +244,11 @@ def register():
         result = db.session.execute(db.select(User).where(User.email == form.email.data))
         user = result.scalar()
         if user:
-            flash("⚠️ You've already signed up with that email, log in instead!")
+            flash("You've already signed up with that email, log in instead!")
             return redirect(url_for('login'))
 
         if form.password.data != form.confirm.data:
-            flash("⚠️ Passwords do not match.")
+            flash("⚠Passwords do not match.")
             return redirect(url_for('register'))
 
         hash_pw = generate_password_hash(form.password.data, method='pbkdf2:sha256', salt_length=8)
@@ -574,7 +574,6 @@ def pay():
     idempotency_key = request.args.get('id_key')
     required_str = request.args.get("required_fields")
     required = ast.literal_eval(required_str)
-    print(required)
     url = 'https://api.flutterwave.cloud/developersandbox/payment-methods'
     header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
     try:
@@ -617,43 +616,25 @@ def pay():
                     }
             charge_response = requests.post(charge_url, headers=charge_header, json=charge_data)
 
-            if charge_response.json()["data"]["next_action"]["type"] == "requires_otp":
-                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
-                payload = {
-                                "authorization": {
-                                    "type": "otp",
-                                    "otp": {
-                                        "code": "123456"
-                                    }
-                                }
-                            }
-                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
-                response = requests.put(url, json=payload, headers=headers)
-                return jsonify(response.json())
+            try:
+                if charge_response.json()["data"]["next_action"]["type"] == "requires_otp":
+                    return redirect(url_for('authenticate', method="requires_otp", bearer=bearer, trace_id=trace_id,
+                                        customer_id=customer_id, nonce=required["nonce"]))
 
-            elif charge_response.json()["data"]["next_action"]["type"] == "requires_pin":
-                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
-                payload = {
-                                "authorization": {
-                                    "type": "pin",
-                                    "pin": {
-                                            "nonce": "w2zQDGCf1QXA",
-                                            "encrypted_pin": "LC8FYIrkmK6oMULiBskRx9L3"
-                                                                                        }
-                                                                                    }
-                            }
-                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
-                response = requests.put(url, json=payload, headers=headers)
-                return jsonify(response.json())
+                elif charge_response.json()["data"]["next_action"]["type"] == "requires_pin":
+                    return redirect(url_for('authenticate', method="requires_pin", bearer=bearer, trace_id=trace_id,
+                                            customer_id=customer_id, nonce=required["nonce"]))
 
-            elif charge_response.json()["data"]["next_action"]["type"] == "redirect_url":
-                return redirect(url_for(charge_response.json()["data"]["next_action"]["redirect_url"]["url"]))
+                elif charge_response.json()["data"]["next_action"]["type"] == "redirect_url":
+                    return redirect(url_for(charge_response.json()["data"]["next_action"]["redirect_url"]["url"]))
 
-            else:
-                return jsonify({
-                    'success': False,
-                    "message": charge_response.json()["data"]["next_action"]
-                }), 500
+                else:
+                    return jsonify({
+                        'success': False,
+                        "message": charge_response.json()["data"]["next_action"]
+                    }), 500
+            except Exception as e:
+                return redirect(charge_response.json()["data"]["redirect_url"])
         else:
             return jsonify(response.json())
 
@@ -684,33 +665,12 @@ def pay():
         }
             charge_response = requests.post(charge_url, headers=charge_header, json=charge_data)
             if charge_response.json()["data"]["next_action"]["type"] == "requires_otp":
-                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
-                payload = {
-                    "authorization": {
-                        "type": "otp",
-                        "otp": {
-                            "code": "123456"
-                        }
-                    }
-                }
-                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
-                response = requests.put(url, json=payload, headers=headers)
-                return jsonify(response.json())
+                return redirect(url_for('authenticate', method="requires_otp", bearer=bearer, trace_id=trace_id,
+                                        customer_id=customer_id, nonce=required["nonce"]))
 
             elif charge_response.json()["data"]["next_action"]["type"] == "requires_pin":
-                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
-                payload = {
-                    "authorization": {
-                        "type": "pin",
-                        "pin": {
-                            "nonce": "w2zQDGCf1QXA",
-                            "encrypted_pin": "LC8FYIrkmK6oMULiBskRx9L3"
-                        }
-                    }
-                }
-                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
-                response = requests.put(url, json=payload, headers=headers)
-                return jsonify(response.json())
+                return redirect(url_for('authenticate', method="requires_pin", bearer=bearer, trace_id=trace_id,
+                                        customer_id=customer_id, nonce=required["nonce"]))
 
             elif charge_response.json()["data"]["next_action"]["type"] == "redirect_url":
                 return redirect(url_for(charge_response.json()["data"]["next_action"]["redirect_url"]["url"]))
@@ -737,40 +697,17 @@ def pay():
             "amount": total,
             "meta": {"person_name": f'{required["First Name"]} {required["Last Name"]}', "role": "Developer"}
             }
-            print(charge_data)
             charge_response = requests.post(charge_url, headers=charge_header, json=charge_data)
             if charge_response.json()["data"]["next_action"]["type"] == "requires_otp":
-                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
-                payload = {
-                    "authorization": {
-                        "type": "otp",
-                        "otp": {
-                            "code": "123456"
-                        }
-                    }
-                }
-                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
-                response = requests.put(url, json=payload, headers=headers)
-                return jsonify(response.json())
+                return redirect(url_for('authenticate', method="requires_otp", bearer=bearer, trace_id=trace_id,
+                                        customer_id=customer_id, nonce=required["nonce"]))
 
             elif charge_response.json()["data"]["next_action"]["type"] == "requires_pin":
-                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
-                payload = {
-                    "authorization": {
-                        "type": "pin",
-                        "pin": {
-                            "nonce": "w2zQDGCf1QXA",
-                            "encrypted_pin": "LC8FYIrkmK6oMULiBskRx9L3"
-                        }
-                    }
-                }
-                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
-                response = requests.put(url, json=payload, headers=headers)
-                return jsonify(response.json())
+                return redirect(url_for('authenticate', method="requires_pin", bearer=bearer, trace_id=trace_id,
+                                        customer_id=customer_id, nonce=required["nonce"]))
 
             elif charge_response.json()["data"]["next_action"]["type"] == "redirect_url":
                 pay_rdr = charge_response.json()["data"]["next_action"]["redirect_url"]["url"]
-                print(pay_rdr)
                 return redirect(pay_rdr)
 
             else:
@@ -804,36 +741,13 @@ def pay():
         }
             charge_response = requests.post(charge_url, headers=charge_header, json=charge_data)
             if charge_response.json()["data"]["next_action"]["type"] == "requires_otp":
-                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
-                payload = {
-                    "authorization": {
-                        "type": "otp",
-                        "otp": {
-                            "code": "123456"
-                        }
-                    }
-                }
-                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
-                response = requests.put(url, json=payload, headers=headers)
-                return jsonify(response.json())
+                return redirect(url_for('authenticate', method="requires_otp", bearer=bearer, trace_id=trace_id, customer_id=customer_id, nonce=required["nonce"]))
 
             elif charge_response.json()["data"]["next_action"]["type"] == "requires_pin":
-                url = f"https://api.flutterwave.cloud/developersandbox/charges/{search_response.json()['data'][0]['id']}"
-                payload = {
-                    "authorization": {
-                        "type": "pin",
-                        "pin": {
-                            "nonce": "w2zQDGCf1QXA",
-                            "encrypted_pin": "LC8FYIrkmK6oMULiBskRx9L3"
-                        }
-                    }
-                }
-                headers = {"X-Trace-Id": trace_id, "authorization": bearer}
-                response = requests.put(url, json=payload, headers=headers)
-                return jsonify(response.json())
+                return redirect(url_for('authenticate', method="requires_pin", bearer=bearer, trace_id=trace_id, customer_id=customer_id, nonce=required["nonce"]))
 
             elif charge_response.json()["data"]["next_action"]["type"] == "redirect_url":
-                return redirect(url_for(charge_response.json()["data"]["next_action"]["redirect_url"]["url"]))
+                return redirect(charge_response.json()["data"]["next_action"]["redirect_url"]["url"])
 
             else:
                 return jsonify({
@@ -844,6 +758,53 @@ def pay():
             return jsonify(response.json())
     else:
         return jsonify({400 :{"Message": "Invalid Request"}})
+
+
+@app.route("/payment/authenticate", methods=["GET", "POST"])
+def authenticate(method):
+    bearer = request.args.get("bearer")
+    trace_id = request.args.get("trace_id")
+    customer_id = request.args.get("customer_id")
+    nonce = request.args.get("nonce")
+    if method == "requires_otp":
+        form = AuthForm()
+    elif method == "requires_pin":
+        form = Pin()
+    else:
+        return render_template("Error")
+    if form.validate_on_submit():
+        if method == "requires_pin":
+            raw = form.pin.data()
+            pin = alien.encrypt(raw, nonce=nonce)
+            url = f"https://api.flutterwave.cloud/developersandbox/charges/{customer_id}"
+            payload = {
+                "authorization": {
+                    "type": "pin",
+                    "pin": {
+                        "nonce": nonce,
+                        "encrypted_pin": pin
+                    }
+                }
+            }
+            headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+            response = requests.put(url, json=payload, headers=headers)
+            return jsonify(response.json())
+        elif method == "requires_otp":
+            otp = form.auth.data()
+            url = f"https://api.flutterwave.cloud/developersandbox/charges/{customer_id}"
+            payload = {
+                "authorization": {
+                    "type": "otp",
+                    "otp": {
+                        "code": otp
+                    }
+                }
+            }
+            headers = {"X-Trace-Id": trace_id, "authorization": bearer}
+            response = requests.put(url, json=payload, headers=headers)
+            return jsonify(response.json())
+    return render_template("auth.html", form=form, method=method)
+
 
 
 @app.route("/delete/<int:post_id>")
@@ -903,6 +864,10 @@ def view(item_id):
     item = db.get_or_404(Items, item_id)
     return render_template("view.html", user=current_user, item=item, cart_count=cart_count)
 
+def clear_cart():
+    db.session.execute(db.delete(Cart).where(Cart.user_id == current_user.id))
+    db.session.commit()
+    return redirect(url_for('home'))
 
 @app.route("/inventory", methods=["GET", "POST"])
 def inventory():
@@ -914,9 +879,3 @@ def inventory():
 if __name__ == "__main__":
     app.run(debug=True)
 
-#     try:
-#         customer_list = requests.get(url, headers=headers, json=data)
-#         print(f"Customer ID: {customer_list.json()['data'][0]['id']}")
-#         print(customer_list.text)
-#     except Exception as e:
-#         return jsonify(e)
