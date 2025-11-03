@@ -262,21 +262,19 @@
     const container = document.querySelector(".scrolling-container-bs");
     let scrollAmount = 0;
     let scrollStep = 1; // Adjust speed (higher = faster)
-let paused = false;
 
-container.addEventListener("mouseenter", () => paused = true);
-container.addEventListener("mouseleave", () => paused = false);
+    function autoScroll() {
+      if (container) {
+        container.scrollLeft += scrollStep;
+        scrollAmount += scrollStep;
 
-function autoScroll() {
-  if (!paused && container) {
-    container.scrollLeft += scrollStep;
-    if (container.scrollLeft + container.clientWidth >= container.scrollWidth) {
-      container.scrollLeft = 0;
+        // When reaching the end, reset scroll to start
+        if (container.scrollLeft + container.clientWidth >= container.scrollWidth) {
+          container.scrollLeft = 0;
+        }
+      }
+      requestAnimationFrame(autoScroll);
     }
-  }
-  requestAnimationFrame(autoScroll);
-}
-
 
     autoScroll();
   });
