@@ -1,10 +1,7 @@
 import ast
 from flask import Flask, abort, render_template, redirect, url_for, flash, request, jsonify
 from flask_bootstrap import Bootstrap5
-from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Text, Float, Boolean
+from flask_login import login_user, LoginManager, current_user, logout_user, login_required
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from forms import RegisterForm, LoginForm, AuthForm, Pin, Add, EditItem
@@ -15,21 +12,18 @@ import string
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import os
 import uuid
+from models import db, Items, User, Cart
+from seeds import seed_demo_data
 
 
 app = Flask(__name__)
 Bootstrap5(app)
-client_id = "c00c4196-adc1-4976-aac5-d591a78542ff"
-client_secret = "tQEKaUHsxf2J833xWpwyJLyjpcXuqwhH"
-encryption_key = "jQAOttdsQO+jH6pVr1ANW1HTHAOpeP5uTxMFaj2S/CE="
+client_id = os.getenv('client_id')
+client_secret = os.getenv('client_secret')
+encryption_key = os.getenv('encryption_key')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-login_manager = LoginManager()
-login_manager.init_app(app)
 application = app
 
-@login_manager.user_loader
-def load_user(user_id):
-    return db.get_or_404(User, user_id)
 
 
 class AESEncryptor:
@@ -66,8 +60,6 @@ class AESEncryptor:
 alien = AESEncryptor(encryption_key=encryption_key)
 
 
-class Base(DeclarativeBase):
-    pass
 
 def clean(data):
     number = str(data)
@@ -87,91 +79,20 @@ def token():
     access_token = response_1.json()["access_token"]
     return access_token
 
-
-
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DB_STORE", "sqlite:///users.db")
-db = SQLAlchemy(model_class=Base)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 db.init_app(app)
 
-class User(UserMixin, db.Model):
-    __tablename__ = "users"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    email: Mapped[str] = mapped_column(String(100), unique=True)
-    password: Mapped[str] = mapped_column(String(100))
-    name: Mapped[str] = mapped_column(String(100))
-    cart = relationship("Cart", back_populates="user")
+with app.app_context():
+    db.create_all()
+    seed_demo_data()
 
-
-
-class Items(db.Model):
-    __tablename__ = "stock"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(250), nullable=False)
-    img_url: Mapped[str] = mapped_column(String(1250), nullable=True)
-    description: Mapped[str] = mapped_column(String(500), nullable=False)
-    price: Mapped[int] = mapped_column(Integer, nullable=False)
-    unit: Mapped[str] = mapped_column(String(250), nullable=False)
-    cart = relationship("Cart", back_populates="product")
-
-
-class Cart(db.Model):
-    __tablename__ = "cart"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("users.id"))
-    item_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("stock.id"))
-    amount: Mapped[int] = mapped_column(Integer, default=1)
-    product = relationship("Items", back_populates="cart")
-    user = relationship("User", back_populates="cart")
-
-inventory_dict = [{
-        "description": "Made through controlled heating, blending, filtration and extraction. With no added colouring or preservatives it is a natural sugar that has the added benefit of being less processed than white sugar.",
-        "id": 1,
-        "img_url": "https://skinnyms.com/wp-content/uploads/2021/03/Homemade-Date-Syrup-1-Yum-500x500.jpg",
-        "name": "Date Syrup",
-        "price": 15000.0,
-        "unit": "Litre"
-    },
-    {
-        "description": "Made through controlled heating, blending, filtration and extraction. With no added colouring or preservatives it's a natural sugar that has the added benefit of being less processed than white sugar.",
-        "id": 2,
-        "img_url": "https://m.media-amazon.com/images/I/713rSxKKaPL.jpg",
-        "name": "Date Syrup ",
-        "price": 7000.0,
-        "unit": "50CL"
-    },
-    {
-        "description": "Vacum dried fresh catfish, selectively sorted and dried under the perfect temperature, humidty and atmosphere to ensure the nutritional and hygenic qualities were maintained.",
-        "id": 3,
-        "img_url": "https://sc04.alicdn.com/kf/A83b0a6b2eb864b9d9fe9023c946cc3b8T.jpg",
-        "name": "Cat Fish",
-        "price": 5000.0,
-        "unit": "KG"
-    },
-    {
-        "description": "Get value and quality with our 50 kg bag of rice. Ideal for bulk buying, this premium rice is perfect for everyday meals, catering, or large family.",
-        "id": 4,
-        "img_url": "https://mall.thecbncoop.com/assets/images/products/1634569714Mama-choice---50-420x458.jpg",
-        "name": "Bag of Rice",
-        "price": 80500.0,
-        "unit": "50KG"
-    },
-    {
-        "description": "Vegetable oil locally produced in Nigeria, well filtered, available in 25L kegs, hygienically packaged, and has a tamper-evident seal",
-        "id": 5,
-        "img_url": "https://deeski.com/image/cache/catalog/Foods/Kings%20devon%20veg%20oil%2025ltrs-500x500.jpg",
-        "name": "Groundnut Oil",
-        "price": 90500.0,
-        "unit": "25Litre"
-    },
-    {
-        "description": "Palm oil locally produced in Nigeria, well filtered, available in 25L kegs, hygienically packaged, and has a tamper-evident seal",
-        "id": 6,
-        "img_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6YNYp1jJXMOynawoAtkgEpaqOgtf9NOfcRQ&s",
-        "name": "Palm Oil",
-        "price": 68500.0,
-        "unit": "25Litre"
-    }]
-
+login_manager = LoginManager()
+login_manager.init_app(app)
+@login_manager.user_loader
+def load_user(user_id):
+    return db.get_or_404(User, user_id)
 
 @app.route("/add-to-cart/<int:item_id>", methods=["POST"])
 def add_to_cart(item_id):
@@ -206,11 +127,6 @@ def add_to_cart(item_id):
             'message': 'An error occurred while adding the item.'
         }), 500
 
-
-with app.app_context():
-    db.create_all()
-
-
 def admin_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -225,12 +141,8 @@ def admin_only(f):
 @app.route("/", methods=["GET", "POST"])
 def home():
     stocks = db.session.execute(db.select(Items)).scalars().all()
-    if stocks:
-        cart_count = len(current_user.cart) if current_user.is_authenticated else 0
-        return render_template("index.html", user=current_user, stocks=stocks, cart_count=cart_count, page='Products')
-    else:
-        cart_count = len(current_user.cart) if current_user.is_authenticated else 0
-        return render_template("index.html", user=current_user, stocks=inventory_dict, cart_count=cart_count, page='This Is a Demo Product Page - current inventory Database is empty')
+    cart_count = len(current_user.cart) if current_user.is_authenticated else 0
+    return render_template("index.html", user=current_user, stocks=stocks, cart_count=cart_count, page='Products')
 
 
 @app.route('/register', methods=["GET", "POST"])
