@@ -39,7 +39,8 @@
       transform: scale(1.05); /* Gentle zoom effect on hover */
     }
 .scrolling-container-bs {
-  scroll-behavior: smooth;
+  scroll-behavior: auto; /* Let JS control movement */
+  -webkit-overflow-scrolling: touch;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
@@ -50,6 +51,7 @@
 .scrolling-container-bs::-webkit-scrollbar {
   display: none;             /* Hide scrollbar in Chrome, Safari */
 }
+
 
 </style>
 
@@ -258,26 +260,42 @@
 {% endblock %}
 {{ bootstrap.load_js() }}
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const container = document.querySelector(".scrolling-container-bs");
-    let scrollAmount = 0;
-    let scrollStep = 1; // Adjust speed (higher = faster)
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.querySelector(".scrolling-container-bs");
+  let scrollStep = 0.5; // Lower for smoother movement on mobile
+  let autoScrollActive = true;
+  let lastTimestamp = 0;
 
-    function autoScroll() {
-      if (container) {
-        container.scrollLeft += scrollStep;
-        scrollAmount += scrollStep;
+  function autoScroll(timestamp) {
+    if (!autoScrollActive || !container) return;
+    const delta = timestamp - lastTimestamp;
 
-        // When reaching the end, reset scroll to start
-        if (container.scrollLeft + container.clientWidth >= container.scrollWidth) {
-          container.scrollLeft = 0;
-        }
+    // Scroll only every ~16ms (~60fps)
+    if (delta > 16) {
+      container.scrollLeft += scrollStep;
+      if (container.scrollLeft + container.clientWidth >= container.scrollWidth) {
+        container.scrollLeft = 0;
       }
-      requestAnimationFrame(autoScroll);
+      lastTimestamp = timestamp;
     }
+    requestAnimationFrame(autoScroll);
+  }
 
-    autoScroll();
+  // Pause auto scroll when user interacts
+  container.addEventListener("touchstart", () => autoScrollActive = false);
+  container.addEventListener("touchend", () => {
+    autoScrollActive = true;
+    requestAnimationFrame(autoScroll);
   });
+  container.addEventListener("mouseenter", () => autoScrollActive = false);
+  container.addEventListener("mouseleave", () => {
+    autoScrollActive = true;
+    requestAnimationFrame(autoScroll);
+  });
+
+  requestAnimationFrame(autoScroll);
+});
 </script>
+
 
 {% include "footer.html" %}"

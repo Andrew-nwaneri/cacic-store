@@ -338,6 +338,7 @@
     </main>
 </div>
 {% include "footer.html" %}
+{{ bootstrap.load_js() }}
 <script>
     // Get all the radio buttons for payment methods
     const paymentRadios = document.querySelectorAll('input[name="paymentMethod"]');

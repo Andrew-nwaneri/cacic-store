@@ -1,210 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
     <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <meta name="description" content="" />
-    <meta name="author" content="" />
+    <meta name="description" content=""/>
+    <meta name="author" content=""/>
     {% block styles %}
-        {{ bootstrap.load_css() }}
-        <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
-         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet"
-    xintegrity="sha384-aFq/bzH65dt+w6FI2ooMVUpc+21e0SRygnTpmBvdBgSdnuTN7QbdgL+OapgHtvPp" crossorigin="anonymous">
+    {{ bootstrap.load_css() }}
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet"
+          xintegrity="sha384-aFq/bzH65dt+w6FI2ooMVUpc+21e0SRygnTpmBvdBgSdnuTN7QbdgL+OapgHtvPp" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Danfo&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Playwrite+AU+QLD:wght@100..400&family=Playwrite+GB+S:ital,wght@0,100..400;1,100..400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Danfo&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Playwrite+AU+QLD:wght@100..400&family=Playwrite+GB+S:ital,wght@0,100..400;1,100..400&display=swap"
+          rel="stylesheet">
 
-<style>
-    /* Your existing styles */
-    .gradient-background {
-        background: linear-gradient(to bottom, #C562AF, #FEC5F6);
-    }
-    .playwrite-hu-h1 {
-        font-family: "Playwrite HU", cursive;
-        font-optical-sizing: auto;
-        font-weight: 400;
-        font-style: normal;
-        color: #DBDBDB;
-    }
-    .logo {
-        color: #D7D7D7;
-    }
-    .feature-icon {
-        width: 4rem;
-        height: 4rem;
-        border-radius: 0.75rem;
-    }
-    .carousel-item {
-        width: 100%;
-        height: 100vh;
-        background-size: cover;
-        background-position: center;
-    }
-
-    /* --- UPDATED CSS FOR THE CART BADGE --- */
-    .cart-badge {
-        /* Use inline-flex to center content inside the badge */
-        display: inline-flex;
-        align-items: center; /* Vertical centering */
-        justify-content: center; /* Horizontal centering */
-
-        /* Force a circular shape for single-digit numbers */
-        height: 1.25rem;
-        min-width: 1.25rem;
-        padding: 0; /* Reset padding to avoid conflicting with height/width */
-
-        font-size: 0.75rem; /* Still a good font size */
-        line-height: 1;
-
-        /* Fine-tune position */
-        top: -5px !important;
-        right: -10px !important;
-    }
-
-    .cart-badge:empty, .cart-badge.hidden {
-        display: none;
-    }
-
-    /* Custom CSS for large screens and up */
-    @media (min-width: 992px) {
-        .logo-img {
-            height: calc(55px * 1.2);
+    <style>
+        /* Your existing styles */
+        .gradient-background {
+            background: linear-gradient(to bottom, #C562AF, #FEC5F6);
         }
-    }
+        .playwrite-hu-h1 {
+            font-family: "Playwrite HU", cursive;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            color: #DBDBDB;
+        }
+        .logo {
+            color: #D7D7D7;
+        }
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 0.75rem;
+        }
+        .carousel-item {
+            width: 100%;
+            height: 100vh;
+            background-size: cover;
+            background-position: center;
+        }
 
-    /* --- NEW COLLAPSIBLE SEARCH STYLES --- */
-    .search-wrapper {
-        /* Initial state on mobile: minimal width, hidden input */
-        max-width: 25px; /* Width for the search icon */
-        transition: max-width 0.3s ease-out;
-        overflow: hidden;
-        position: relative;
-    }
+        /* --- UPDATED CSS FOR THE CART BADGE --- */
+        .cart-badge {
+            /* Use inline-flex to center content inside the badge */
+            display: inline-flex;
+            align-items: center; /* Vertical centering */
+            justify-content: center; /* Horizontal centering */
 
-    .search-form {
-        /* Initially hide the form content on mobile */
-        width: 100%;
-        opacity: 0;
-        transition: opacity 0.2s 0.1s ease-in; /* Delay opacity for better transition feel */
-        pointer-events: none; /* Prevent interaction when hidden */
-        display: none; /* Force hide the element initially on small screens */
-    }
+            /* Force a circular shape for single-digit numbers */
+            height: 1.25rem;
+            min-width: 1.25rem;
+            padding: 0; /* Reset padding to avoid conflicting with height/width */
 
-    .search-wrapper.expanded {
-        /* Expanded state on mobile: full width, visible input */
-        max-width: 250px; /* Adjust max width as needed for mobile view */
-        transition: max-width 0.3s ease-in;
-    }
+            font-size: 0.75rem; /* Still a good font size */
+            line-height: 1;
 
-    .search-wrapper.expanded .search-form {
-        opacity: 1;
-        pointer-events: all;
-        display: block; /* Show the element when expanded */
-        margin-left: 0.5rem; /* Spacing between icon and input */
-    }
+            /* Fine-tune position */
+            top: -5px !important;
+            right: -10px !important;
+        }
 
-    /* Desktop styles (lg and up) */
-    @media (min-width: 992px) {
+        .cart-badge:empty, .cart-badge.hidden {
+            display: none;
+        }
+
+        /* Custom CSS for large screens and up */
+        @media (min-width: 992px) {
+            .logo-img {
+                height: calc(55px * 1.2);
+            }
+        }
+
+        /* --- NEW COLLAPSIBLE SEARCH STYLES --- */
         .search-wrapper {
-            /* On desktop, the wrapper takes full space and allows content to show */
-            max-width: none;
-            flex-grow: 1; /* Allow it to take up remaining space */
-            overflow: visible;
+            /* Initial state on mobile: minimal width, hidden input */
+            max-width: 25px; /* Width for the search icon */
+            transition: max-width 0.3s ease-out;
+            overflow: hidden;
+            position: relative;
         }
 
         .search-form {
-            opacity: 1;
-            pointer-events: all;
-            display: block;
+            /* Initially hide the form content on mobile */
+            width: 100%;
+            opacity: 0;
+            transition: opacity 0.2s 0.1s ease-in; /* Delay opacity for better transition feel */
+            pointer-events: none; /* Prevent interaction when hidden */
+            display: none; /* Force hide the element initially on small screens */
         }
 
-        /* Hide the toggle button on desktop */
-        #search-toggle {
-            display: none !important;
+        .search-wrapper.expanded {
+            /* Expanded state on mobile: full width, visible input */
+            max-width: 250px; /* Adjust max width as needed for mobile view */
+            transition: max-width 0.3s ease-in;
         }
-    }
-</style>
+
+        .search-wrapper.expanded .search-form {
+            opacity: 1;
+            pointer-events: all;
+            display: block; /* Show the element when expanded */
+            margin-left: 0.5rem; /* Spacing between icon and input */
+        }
+
+        /* Desktop styles (lg and up) */
+        @media (min-width: 992px) {
+            .search-wrapper {
+                /* On desktop, the wrapper takes full space and allows content to show */
+                max-width: none;
+                flex-grow: 1; /* Allow it to take up remaining space */
+                overflow: visible;
+            }
+
+            .search-form {
+                opacity: 1;
+                pointer-events: all;
+                display: block;
+            }
+
+            /* Hide the toggle button on desktop */
+            #search-toggle {
+                display: none !important;
+            }
+        }
+    </style>
     {% endblock %}
 
     <title>{% block title %}CACIC SYNERGY{% endblock %}</title>
 </head>
 <body>
 
-    <header class="py-3 mb-1 border-bottom" style="">
+<header class="py-3 mb-1 border-bottom" style="">
     <!-- Updated grid-template-columns to use 'auto' instead of '2fr' for more fluid behavior -->
     <div class="container-fluid d-grid gap-3 align-items-center" style="grid-template-columns: 1fr auto;">
-      <div class="px-0 px-lg-5">
-        <a href="{{ url_for('home') }}" class="align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none" aria-expanded="false">
-            <img src="{{ url_for('static', filename='assets/cacic.png') }}" class="logo-img" height="55" alt="Cacic Synergy Logo">
-        </a>
-      </div>
-
-      <div class="d-flex align-items-center">
-
-        <!-- NEW SEARCH WRAPPER -->
-        <div id="search-wrapper" class="search-wrapper d-flex align-items-center me-3">
-            <!-- Search Icon (Visible on mobile, triggers expansion) -->
-            <button id="search-toggle" type="button" class="btn btn-link text-body d-lg-none p-0 flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
-                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-                </svg>
-            </button>
-
-            <!-- Search Form (Collapsed on mobile, full width on desktop) -->
-            <form id="search-form" class="search-form flex-grow-1" method="get" action="{{ url_for('search') }}">
-                <input type="text" class="form-control search-input" placeholder="Search For Item..." aria-label="Search" name="search" id="query">
-            </form>
-        </div>
-        <!-- END NEW SEARCH WRAPPER -->
-
-
-    {% if current_user.is_authenticated %}
-        <div class="flex-shrink-o mx-4">
-            <a href="{{ url_for('cart') }}" class="checkout position-relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="black" class="bi bi-cart" viewBox="0 0 16 16">
-                  <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M3.102 4l1.313 7h8.17l1.313-7zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4m-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
-                </svg>
-                <span id="cart-count" class="cart-badge position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                    {{ cart_count if cart_count > 0 else '' }}
-                </span>
+        <div class="px-0 px-lg-5">
+            <a href="{{ url_for('home') }}"
+               class="align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none"
+               aria-expanded="false">
+                <img src="{{ url_for('static', filename='assets/cacic.png') }}" class="logo-img" height="55"
+                     alt="Cacic Synergy Logo">
             </a>
         </div>
-    {% endif %}
-        <div class="flex-shrink-0 dropdown">
-          <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-gear" viewBox="0 0 16 16">
-              <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/>
-              <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z"/>
-            </svg>
-          </a>
+
+        <div class="d-flex align-items-center">
+
+            <!-- NEW SEARCH WRAPPER -->
+            <div id="search-wrapper" class="search-wrapper d-flex align-items-center me-3">
+                <!-- Search Icon (Visible on mobile, triggers expansion) -->
+                <button id="search-toggle" type="button" class="btn btn-link text-body d-lg-none p-0 flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                         class="bi bi-search" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                    </svg>
+                </button>
+
+                <!-- Search Form (Collapsed on mobile, full width on desktop) -->
+                <form id="search-form" class="search-form flex-grow-1" method="get" action="{{ url_for('search') }}">
+                    <input type="text" class="form-control search-input" placeholder="Search For Item..."
+                           aria-label="Search" name="search" id="query">
+                </form>
+            </div>
+            <!-- END NEW SEARCH WRAPPER -->
+
+
             {% if current_user.is_authenticated %}
-          <ul class="dropdown-menu text-small shadow">
-              <li><a class="dropdown-item active" href="#" aria-current="page">Overview</a></li>
-              {% if current_user.id == 1 %}
-              <li><a class="dropdown-item" href="{{ url_for('add_new_item') }}">Add new product</a></li>
-              <li><a class="dropdown-item" href="{{ url_for( 'inventory') }}">Inventory</a></li>
-              <li><a class="dropdown-item" href="#">Customers</a></li>
-              <li><a class="dropdown-item" href="#">Reports</a></li>
-              <li><a class="dropdown-item" href="#">Analytics</a></li>
-              <li><hr class="dropdown-divider"></li>
-              {% endif %}
-              <li><a class="dropdown-item" href="{{ url_for('cart') }}">Checkout</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a></li>
-          </ul>
+            <div class="flex-shrink-o mx-4">
+                <a href="{{ url_for('cart') }}" class="checkout position-relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="black" class="bi bi-cart"
+                         viewBox="0 0 16 16">
+                        <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M3.102 4l1.313 7h8.17l1.313-7zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4m-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+                    </svg>
+                    <span id="cart-count"
+                          class="cart-badge position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ cart_count if cart_count > 0 else '' }}
+                </span>
+                </a>
+            </div>
             {% endif %}
-            {% if not current_user.is_authenticated %}
-          <ul class="dropdown-menu text-small shadow">
-              <li><a class="dropdown-item" href="{{ url_for('login') }}">Login</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('register') }}">Sign up</a></li>
-          </ul>
-            {% endif %}
+            <div class="flex-shrink-0 dropdown">
+                <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle"
+                   data-bs-toggle="dropdown" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                         class="bi bi-gear" viewBox="0 0 16 16">
+                        <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/>
+                        <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z"/>
+                    </svg>
+                </a>
+                {% if current_user.is_authenticated %}
+                <ul class="dropdown-menu text-small shadow">
+                    <li><a class="dropdown-item active" href="#" aria-current="page">Overview</a></li>
+                    {% if current_user.id == 1 %}
+                    <li><a class="dropdown-item" href="{{ url_for('add_new_item') }}">Add new product</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for( 'inventory') }}">Inventory</a></li>
+                    <li><a class="dropdown-item" href="#">Customers</a></li>
+                    <li><a class="dropdown-item" href="#">Reports</a></li>
+                    <li><a class="dropdown-item" href="#">Analytics</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    {% endif %}
+                    <li><a class="dropdown-item" href="{{ url_for('cart') }}">Checkout</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a></li>
+                </ul>
+                {% endif %}
+                {% if not current_user.is_authenticated %}
+                <ul class="dropdown-menu text-small shadow">
+                    <li><a class="dropdown-item" href="{{ url_for('login') }}">Login</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('register') }}">Sign up</a></li>
+                </ul>
+                {% endif %}
+            </div>
         </div>
-      </div>
     </div>
-  </header>
+</header>
 
 <script>
     // This script handles the expansion and collapse of the search bar on mobile screens.
@@ -238,58 +250,71 @@
     });
 
     // Existing addToCart function (unchanged)
-    function addToCart(itemId, buttonElement) {
-      // Disable the button to prevent multiple clicks
-      buttonElement.disabled = true;
-      const originalHtml = buttonElement.innerHTML;
-      buttonElement.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+  async function addToCart(itemId, buttonElement) {
+  // Disable button immediately
+  buttonElement.disabled = true;
+  const originalHtml = buttonElement.innerHTML;
+  buttonElement.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
 
-      fetch(`/add-to-cart/${itemId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ item_id: itemId })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
+  try {
+    const response = await fetch(`/add-to-cart/${itemId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_id: itemId })
+    });
 
-          // On success, change button text and style
-          buttonElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
-                                          <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/>
-                                        </svg>`;
-          buttonElement.style.backgroundColor = '#dcb45c'; // Green color for success
-
-          // Reset the button after a delay
-          setTimeout(() => {
-            buttonElement.innerHTML = originalHtml;
-            buttonElement.style.backgroundColor = '#dcb45c'; // Reset to original color
-            buttonElement.disabled = false;
-          }, 2000); // Reset after 2 seconds
-
-          // Optional: Update cart count
-          const cartCountElement = document.getElementById('cart-count');
-          if (cartCountElement) {
-            cartCountElement.innerText = data.cart_count;
-          }
-        } else {
-          // IMPORTANT: Replaced alert() with console logging for better development practice
-          console.error(data.message);
-          buttonElement.innerHTML = originalHtml; // Reset button on error
-          buttonElement.disabled = false;
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        // IMPORTANT: Replaced alert() with console logging for better development practice
-        console.error('An error occurred while adding the item to the cart.');
-        buttonElement.innerHTML = originalHtml; // Reset button on error
-        buttonElement.disabled = false;
-      });
+    // Try to parse JSON safely
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
     }
+
+    // Handle unauthenticated user (HTTP 401)
+    if (response.status === 401 && data.redirect) {
+      window.location.href = data.redirect;
+      return;
+    }
+
+    // Handle success
+    if (data.success) {
+      buttonElement.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+          <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/>
+        </svg>`;
+      buttonElement.style.backgroundColor = '#dcb45c';
+
+      // Update cart count if element exists
+      const cartCountElement = document.getElementById('cart-count');
+      if (cartCountElement && typeof data.cart_count !== 'undefined') {
+        cartCountElement.innerText = data.cart_count;
+      }
+
+      // Reset button after 2 seconds
+      setTimeout(() => {
+        buttonElement.innerHTML = originalHtml;
+        buttonElement.style.backgroundColor = '#dcb45c';
+        buttonElement.disabled = false;
+      }, 2000);
+
+    } else {
+      // Any other error (like missing JSON or server issue)
+      console.error(data.message || 'An unexpected error occurred.');
+      buttonElement.innerHTML = originalHtml;
+      buttonElement.disabled = false;
+    }
+
+  } catch (error) {
+    // Handle network or parsing failure
+    console.error('Error:', error);
+    buttonElement.innerHTML = originalHtml;
+    buttonElement.disabled = false;
+  }
+}
+
 </script>
 
-  {{ bootstrap.load_js() }}
+{{ bootstrap.load_js() }}
 </body>
 </html>

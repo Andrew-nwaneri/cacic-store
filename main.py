@@ -14,6 +14,7 @@ import os
 import uuid
 from models import db, Items, User, Cart
 from seeds import seed_demo_data
+from pprint import pprint
 
 
 app = Flask(__name__)
@@ -94,14 +95,25 @@ login_manager.init_app(app)
 def load_user(user_id):
     return db.get_or_404(User, user_id)
 
+def admin_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # If id is not 1 then return abort with 403 error
+        if current_user.id != 1:
+            return abort(403)
+        # Otherwise continue with the route function
+        return f(*args, **kwargs)
+
+    return decorated_function
+
 @app.route("/add-to-cart/<int:item_id>", methods=["POST"])
 def add_to_cart(item_id):
     if not current_user.is_authenticated:
         return jsonify({
             'success': False,
-            'message': 'You need to login or register to add item to cart! ️'
+            'redirect': url_for('login'),
+            'message': 'You need to login or register to add items to your cart.'
         }), 401
-
     try:
         already = db.session.execute(db.select(Cart).where(Cart.item_id == item_id, Cart.user_id == current_user.id)).scalar()
         if already:
@@ -127,16 +139,7 @@ def add_to_cart(item_id):
             'message': 'An error occurred while adding the item.'
         }), 500
 
-def admin_only(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # If id is not 1 then return abort with 403 error
-        if current_user.id != 1:
-            return abort(403)
-        # Otherwise continue with the route function
-        return f(*args, **kwargs)
 
-    return decorated_function
 
 @app.route("/", methods=["GET", "POST"])
 def home():
@@ -238,11 +241,11 @@ def cart():
     idempotency_key = str(uuid.uuid4())
     access_token = token()
     bearer = f'Bearer {access_token}'
-    url = "https://api.flutterwave.cloud/developersandbox/customers"
+    url = "https://developersandbox-api.flutterwave.com/customers"
 
     if not current_user.is_authenticated:
         flash("You need to login or register to add items to your cart.")
-        return redirect(url_for("landing"))
+        return redirect(url_for("home"))
     if current_user.is_authenticated:
         current_user_cart= db.session.execute(db.select(Cart).where(Cart.user_id == current_user.id)).scalars().all()
         cart_count = len(current_user.cart)
@@ -255,6 +258,7 @@ def cart():
         cart_count = 0
         total = 0
         current_user_cart = 0
+
     if request.method == "POST":
         nonce = alien.generate_nonce(12)
         first_name = request.form.get("firstName")
@@ -364,7 +368,7 @@ def cart():
                 flash(f"{field_name} is a required field.")
                 return render_template("processing.html", cart_count=cart_count)
 
-        credential_header = {'Authorization': bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id}
+        credential_header = {'Authorization': bearer, "X-Idempotency-Key": idempotency_key, "X-Trace-Id": trace_id, 'Content-Type': 'application/json'}
         if middle_name and address2:
             credential_data = {
                 "address": {
@@ -442,9 +446,9 @@ def cart():
                 },
                 "email": mail}
         try:
-            search_url = 'https://api.flutterwave.cloud/developersandbox/customers/search'
-            search_data = {'page': 1, 'size': 10, 'email': current_user.email}
-            search_headers = {'Authorization': bearer, "X-Trace-Id": trace_id}
+            search_url = 'https://developersandbox-api.flutterwave.com/customers/search?page=1&size=10'
+            search_data = {'email': current_user.email}
+            search_headers = {'Authorization': bearer, "X-Trace-Id": trace_id, 'accept': 'application/json', 'content-type': 'application/json'}
             search_response = requests.post(search_url, headers=search_headers, json=search_data)
 
         except Exception as e:
@@ -452,9 +456,11 @@ def cart():
                 'success': False,
                 'message': f'{e}'
             }), 500
+        pprint(search_response.json())
         if search_response.json()['data']:
-            update_url = f"https://api.flutterwave.cloud/developersandbox/customers/{search_response.json()['data'][0]['id']}"
-            update = requests.put(url=update_url, headers=credential_header, json=credential_data)
+            update_url = f"https://developersandbox-api.flutterwave.com/customers/{search_response.json()['data'][0]['id']}"
+            update = requests.put(url=update_url, headers={'Authorization': bearer, 'accept': 'application/json', "X-Trace-Id": trace_id, 'Content-Type': 'application/json'}, json=credential_data)
+            pprint({"WasUpdate SUCCESSFUL": [update.json()]})
             if update.json()["status"] == "success":
                 return redirect(
                     url_for('pay', cacic=bearer, payment_option=payment_option, required_fields=required_fields,
@@ -463,6 +469,7 @@ def cart():
                 return jsonify(update.json())
         else:
             credential_response = requests.post(url=url, headers=credential_header, json=credential_data)
+            pprint({'WAS NEW POSTING SUCCESSFUL': [credential_response.json()]})
             if credential_response.json()["status"] == "success":
                 return redirect(
                     url_for('pay', cacic=bearer, payment_option=payment_option, required_fields=required_fields,
@@ -486,12 +493,13 @@ def pay():
     idempotency_key = request.args.get('id_key')
     required_str = request.args.get("required_fields")
     required = ast.literal_eval(required_str)
-    url = 'https://api.flutterwave.cloud/developersandbox/payment-methods'
-    header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
+    url = 'https://developersandbox-api.flutterwave.com/payment-methods'
+    header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key, 'accept': 'application/json', 'content-type': 'application/json'}
     try:
-        search_url = 'https://api.flutterwave.cloud/developersandbox/customers/search'
-        search_data = {'page': 1, 'size': 10, 'email': current_user.email}
-        search_headers = {'Authorization': bearer, "X-Trace-Id": trace_id}
+        search_url = 'https://developersandbox-api.flutterwave.com/customers/search?page=1&size=10'
+        search_data = {'email': current_user.email}
+        search_headers = {'Authorization': bearer, "X-Trace-Id": trace_id, 'accept': 'application/json',
+                          'content-type': 'application/json'}
         search_response = requests.post(search_url, headers=search_headers, json=search_data)
         customer_id = search_response.json()['data'][0]['id']
     except Exception as e:
@@ -512,7 +520,7 @@ def pay():
         }
         response = requests.post(url=url, headers=header, json=data)
         if response.json()["status"] == "success":
-            charge_url = 'https://api.flutterwave.cloud/developersandbox/charges'
+            charge_url = 'https://developersandbox-api.flutterwave.com/charges'
             charge_header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
             charge_data ={
             "reference": required["transaction_reference"],
@@ -561,7 +569,7 @@ def pay():
             }
         response = requests.post(url=url, headers=header, json=data)
         if response.json()["status"] == "success":
-            charge_url = 'https://api.flutterwave.cloud/developersandbox/charges'
+            charge_url = 'https://developersandbox-api.flutterwave.com/charges'
             charge_header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
             charge_data ={
             "reference": required["transaction_reference"],
@@ -598,7 +606,7 @@ def pay():
         data = {"type": "opay"}
         response = requests.post(url=url, headers=header, json=data)
         if response.json()["status"] == "success":
-            charge_url = 'https://api.flutterwave.cloud/developersandbox/charges'
+            charge_url = 'https://developersandbox-api.flutterwave.com/charges'
             charge_header = {'Authorization': bearer, 'X-Trace-Id': trace_id, 'X-Idempotency-Key': idempotency_key}
             charge_data = {
             "reference": required["transaction_reference"],
